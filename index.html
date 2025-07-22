@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SprintTrack - Отслеживание активности</title>
+    <!-- Tailwind CSS CDN для стилизации -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Шрифт Inter для гармоничного и современного вида -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome для иконок -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Основные стили для тела страницы, градиентный фон для жизнерадостности */
@@ -154,6 +157,7 @@
 <body>
     <h1 class="text-4xl font-bold text-gray-800 mb-6 mt-4">SprintTrack</h1>
 
+    <!-- Секция аутентификации -->
     <div id="auth-section" class="container text-center">
         <h2 class="text-2xl font-semibold mb-6">Вход в SprintTrack</h2>
         <div class="mb-4">
@@ -164,6 +168,7 @@
         <p id="auth-message" class="text-red-500 mt-3"></p>
     </div>
 
+    <!-- Основная секция приложения (скрыта до аутентификации) -->
     <div id="app-section" class="container hidden">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold">Привет, <span id="current-user-display"></span>!</h2>
@@ -171,6 +176,7 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Карта и элементы управления -->
             <div class="lg:col-span-2 card p-5">
                 <h3 class="text-xl font-semibold mb-4">Ваш маршрут</h3>
                 <div id="map"></div>
@@ -200,7 +206,9 @@
                 </div>
             </div>
 
+            <!-- Настройки и статистика -->
             <div class="lg:col-span-1 flex flex-col gap-6">
+                <!-- Выбор типа передвижения -->
                 <div class="card p-5">
                     <h3 class="text-xl font-semibold mb-4">Тип передвижения</h3>
                     <select id="movement-type-select" class="input-field mb-4">
@@ -211,6 +219,7 @@
                         <option value="mountainbike">Горный велосипед</option>
                     </select>
 
+                    <!-- Опции для "Пешком" -->
                     <div id="walking-options" class="hidden">
                         <label class="block mb-2"><input type="radio" name="walking-mode" value="sprint" checked> Спринт</label>
                         <label class="block mb-2"><input type="radio" name="walking-mode" value="walk"> Ходьба</label>
@@ -218,6 +227,7 @@
                         <label class="block mb-2"><input type="radio" name="walking-mode" value="hiking"> Хайкинг</label>
                     </div>
 
+                    <!-- Опции для "Велосипед" -->
                     <div id="cycling-options" class="hidden">
                         <label class="block mb-2"><input type="radio" name="cycling-mode" value="balanced" checked> Сбалансированный</label>
                         <p class="text-sm text-gray-600 mb-2">Включает велосипедные дорожки и улицы с низким трафиком. Избегает улиц с ограничением скорости выше 50 км/ч.</p>
@@ -229,39 +239,48 @@
                         <p class="text-sm text-gray-600 mb-2">Маршруты, предпочтительные для нашего велосипедного сообщества, основанные на данных нашей тепловой карты.</p>
                     </div>
 
+                    <!-- Описание для "E-bike" -->
                     <div id="ebike-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Включает больше перепадов высот и избегает ступеней, на которых придётся нести велосипед.</p>
                     </div>
 
+                    <!-- Описание для "Плавная езда" (общая концепция, не отдельный тип) -->
                     <div id="smooth-ride-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Приоритет на комфорт и безопасность, избегает препятствий, таких как лестницы, встроенные рельсы, гравий, песок, брусчатка и плотное движение.</p>
                     </div>
 
+                    <!-- Описание для "Шоссейный велосипед" -->
                     <div id="roadbike-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Оптимизирует поездку для скорости и эффективности. Непокрытые дороги будут избегаться по возможности.</p>
                     </div>
 
+                    <!-- Описание для "Горный велосипед" -->
                     <div id="mountainbike-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Включите пересечённую местность, маршруты для горных велосипедов и больше перепадов высот на маршруте.</p>
                     </div>
                 </div>
 
+                <!-- Вкладки для Истории и Рейтинга -->
                 <div class="card p-5 flex-grow">
                     <div class="flex mb-4 border-b border-gray-200">
                         <button id="history-tab-btn" class="tab-button active mr-2">Мои маршруты</button>
                         <button id="leaderboard-tab-btn" class="tab-button">Рейтинг</button>
                     </div>
 
+                    <!-- Контент вкладки "Мои маршруты" -->
                     <div id="history-content">
                         <h3 class="text-xl font-semibold mb-4">Последние маршруты</h3>
                         <div id="routes-list" class="space-y-3">
+                            <!-- Маршруты будут загружены здесь -->
                             <p class="text-gray-500">Маршруты пока не загружены.</p>
                         </div>
                     </div>
 
+                    <!-- Контент вкладки "Рейтинг" (скрыт по умолчанию) -->
                     <div id="leaderboard-content" class="hidden">
                         <h3 class="text-xl font-semibold mb-4">Рейтинг участников</h3>
                         <div id="leaderboard-list" class="space-y-3">
+                            <!-- Рейтинг будет загружен здесь -->
                             <p class="text-gray-500">Рейтинг пока не загружен.</p>
                         </div>
                     </div>
@@ -270,6 +289,7 @@
         </div>
     </div>
 
+    <!-- Пользовательское модальное окно для сообщений (вместо alert/confirm) -->
     <div id="message-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -278,6 +298,7 @@
         </div>
     </div>
 
+    <!-- Firebase SDKs -->
     <script type="module">
         // Импорт необходимых модулей Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -287,7 +308,7 @@
         // Глобальные переменные, предоставленные средой Canvas
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
-        // Ваша конфигурация Firebase (обновлено)
+        // Ваша конфигурация Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBaO6MfwDB0CCgvDto7VmHgJxN_e-ZsIgE",
             authDomain: "sprinttrack-941b5.firebaseapp.com",
@@ -408,6 +429,7 @@
         let trackingId = null; // ID для watchPosition
         let pathCoordinates = []; // Координаты текущего маршрута
         let pathPolyline; // Объект полилинии на карте
+        let currentMarker = null; // Маркер для текущего местоположения
         let startTime = null; // Время начала отслеживания
         let totalDistance = 0; // Общее пройденное расстояние
         let lastPosition = null; // Последняя известная позиция
@@ -467,6 +489,20 @@
             console.log("Map initialized.");
 
             // Попытка получить текущее местоположение и центрировать карту
+            // Добавляем маркер текущего местоположения
+            currentMarker = new google.maps.Marker({
+                map: map,
+                icon: {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 8,
+                    fillColor: '#4285F4', // Синий цвет
+                    fillOpacity: 1,
+                    strokeWeight: 0
+                },
+                zIndex: 999 // Чтобы маркер был поверх полилинии
+            });
+
+
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -476,27 +512,49 @@
                         };
                         map.setCenter(pos);
                         map.setZoom(15);
-                        document.getElementById('map-status').textContent = 'GPS доступен.';
-                        console.log("Initial GPS position obtained.");
+                        currentMarker.setPosition(pos); // Устанавливаем позицию маркера
+                        document.getElementById('map-status').textContent = 'GPS доступен. Ваше текущее местоположение показано на карте.';
+                        console.log("Initial GPS position obtained and marker set.");
                     },
-                    () => {
-                        handleLocationError(true, map.getCenter());
+                    (error) => {
+                        handleLocationError(true, map.getCenter(), error);
                     }
                 );
             } else {
                 // Браузер не поддерживает геолокацию
-                handleLocationError(false, map.getCenter());
+                handleLocationError(false, map.getCenter(), null);
             }
         };
 
         // Обработка ошибок геолокации
-        function handleLocationError(browserHasGeolocation, pos) {
-            document.getElementById('map-status').textContent = browserHasGeolocation ?
-                'Ошибка: Служба геолокации не удалась. Убедитесь, что GPS включен и разрешен для сайта.' :
-                'Ошибка: Ваш браузер не поддерживает геолокацию.';
-            showModal(browserHasGeolocation ?
-                'Ошибка: Служба геолокации не удалась. Убедитесь, что GPS включен и разрешен для сайта.' :
-                'Ошибка: Ваш браузер не поддерживает геолокацию.');
+        function handleLocationError(browserHasGeolocation, pos, error) {
+            let errorMessage = '';
+            if (browserHasGeolocation) {
+                errorMessage = 'Ошибка: Служба геолокации не удалась. ';
+                if (error) {
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += "Доступ к местоположению запрещен. Пожалуйста, разрешите доступ к GPS в настройках браузера.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += "Информация о местоположении недоступна. Пожалуйста, проверьте сигнал GPS.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += "Время ожидания запроса местоположения истекло. Пожалуйста, попробуйте еще раз.";
+                            break;
+                        default:
+                            errorMessage += "Неизвестная ошибка: " + error.message;
+                            break;
+                    }
+                } else {
+                    errorMessage += "Неизвестная ошибка получения местоположения.";
+                }
+            } else {
+                errorMessage = 'Ошибка: Ваш браузер не поддерживает геолокацию.';
+            }
+            document.getElementById('map-status').textContent = errorMessage;
+            showModal(errorMessage);
+            console.error("Geolocation Error:", errorMessage, error);
         }
 
         // --- Логика отслеживания ---
@@ -522,6 +580,7 @@
             pathPolyline.setPath([]); // Очищаем полилинию на карте
 
             document.getElementById('map-status').textContent = 'Отслеживание начато...';
+            console.log("Tracking started.");
 
             // Начинаем отслеживание позиции
             trackingId = navigator.geolocation.watchPosition(
@@ -532,6 +591,7 @@
                     };
 
                     map.setCenter(newPos); // Центрируем карту на текущей позиции
+                    currentMarker.setPosition(newPos); // Обновляем позицию маркера
 
                     if (lastPosition) {
                         // Вычисляем расстояние между последней и новой позицией
@@ -565,20 +625,21 @@
 
                 },
                 (error) => {
+                    // Обработка ошибок при отслеживании
                     console.error("Geolocation tracking error:", error);
                     let errorMessage = "Ошибка отслеживания GPS: ";
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
-                            errorMessage += "Доступ к местоположению запрещен.";
+                            errorMessage += "Доступ к местоположению запрещен. Пожалуйста, разрешите доступ к GPS в настройках браузера.";
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            errorMessage += "Информация о местоположении недоступна.";
+                            errorMessage += "Информация о местоположении недоступна. Пожалуйста, проверьте сигнал GPS.";
                             break;
                         case error.TIMEOUT:
-                            errorMessage += "Время ожидания запроса местоположения истекло.";
+                            errorMessage += "Время ожидания запроса местоположения истекло. Пожалуйста, попробуйте еще раз.";
                             break;
                         default:
-                            errorMessage += "Неизвестная ошибка.";
+                            errorMessage += "Неизвестная ошибка: " + error.message;
                             break;
                     }
                     document.getElementById('map-status').textContent = errorMessage;
@@ -591,7 +652,6 @@
                     timeout: 5000 // Таймаут для получения позиции
                 }
             );
-            console.log("Tracking started.");
         });
 
         // Слушатель для кнопки "Остановить"
@@ -951,5 +1011,5 @@
         });
 
     </script>
-    </body>
+</body>
 </html>
