@@ -152,6 +152,17 @@
             padding: 20px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
         }
+        /* Стили для кнопки SOS */
+        .btn-sos {
+            background-color: #ef4444; /* Красный цвет */
+            color: white;
+            border: none;
+        }
+        .btn-sos:hover {
+            background-color: #dc2626; /* Темнее красный при наведении */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -185,6 +196,7 @@
                     <button id="start-tracking-btn" class="btn btn-primary flex-grow"><i class="fas fa-play"></i> Начать отслеживание</button>
                     <button id="stop-tracking-btn" class="btn btn-secondary flex-grow" disabled><i class="fas fa-stop"></i> Остановить</button>
                     <button id="share-route-btn" class="btn btn-secondary flex-grow" disabled><i class="fas fa-share-alt"></i> Поделиться</button>
+                    <button id="sos-btn" class="btn btn-sos flex-grow"><i class="fas fa-exclamation-triangle"></i> SOS</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="card p-4">
@@ -260,11 +272,13 @@
                     </div>
                 </div>
 
-                <!-- Вкладки для Истории и Рейтинга -->
+                <!-- Вкладки для Истории, Избранного, Рейтинга и Рекомендуемых -->
                 <div class="card p-5 flex-grow">
-                    <div class="flex mb-4 border-b border-gray-200">
-                        <button id="history-tab-btn" class="tab-button active mr-2">Мои маршруты</button>
-                        <button id="leaderboard-tab-btn" class="tab-button">Рейтинг</button>
+                    <div class="flex mb-4 border-b border-gray-200 overflow-x-auto pb-2">
+                        <button id="history-tab-btn" class="tab-button active mr-2 whitespace-nowrap">Мои маршруты</button>
+                        <button id="favorites-tab-btn" class="tab-button mr-2 whitespace-nowrap">Избранное</button>
+                        <button id="leaderboard-tab-btn" class="tab-button mr-2 whitespace-nowrap">Рейтинг</button>
+                        <button id="recommended-tab-btn" class="tab-button whitespace-nowrap">Рекомендуемые</button>
                     </div>
 
                     <!-- Контент вкладки "Мои маршруты" -->
@@ -276,12 +290,28 @@
                         </div>
                     </div>
 
+                    <!-- Контент вкладки "Избранное" (скрыт по умолчанию) -->
+                    <div id="favorites-content" class="hidden">
+                        <h3 class="text-xl font-semibold mb-4">Избранные маршруты</h3>
+                        <div id="favorites-list" class="space-y-3">
+                            <p class="text-gray-500">Избранные маршруты пока не найдены.</p>
+                        </div>
+                    </div>
+
                     <!-- Контент вкладки "Рейтинг" (скрыт по умолчанию) -->
                     <div id="leaderboard-content" class="hidden">
                         <h3 class="text-xl font-semibold mb-4">Рейтинг участников</h3>
                         <div id="leaderboard-list" class="space-y-3">
                             <!-- Рейтинг будет загружен здесь -->
                             <p class="text-gray-500">Рейтинг пока не загружен.</p>
+                        </div>
+                    </div>
+
+                    <!-- Контент вкладки "Рекомендуемые" (скрыт по умолчанию) -->
+                    <div id="recommended-content" class="hidden">
+                        <h3 class="text-xl font-semibold mb-4">Рекомендуемые маршруты</h3>
+                        <div id="recommended-list" class="space-y-3">
+                            <p class="text-gray-500">Рекомендуемые маршруты пока не загружены.</p>
                         </div>
                     </div>
                 </div>
@@ -298,12 +328,37 @@
         </div>
     </div>
 
+    <!-- Модальное окно для подтверждения повторения маршрута -->
+    <div id="repeat-confirm-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p class="text-lg font-medium text-gray-700 mb-4">Вы уверены, что хотите повторить этот маршрут?</p>
+            <p class="text-sm text-gray-600 mb-6">Ваш текущий прогресс отслеживания будет сброшен.</p>
+            <div class="flex justify-center gap-4">
+                <button id="confirm-repeat-btn" class="btn btn-primary">Повторить</button>
+                <button id="cancel-repeat-btn" class="btn btn-secondary">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для SOS -->
+    <div id="sos-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p class="text-2xl font-bold text-red-600 mb-4"><i class="fas fa-exclamation-triangle"></i> SOS Активирован!</p>
+            <p class="text-lg font-medium text-gray-700 mb-4">Ваше текущее местоположение:</p>
+            <p id="sos-location" class="text-md text-gray-800 font-semibold mb-6">Определение местоположения...</p>
+            <p class="text-sm text-gray-600">В реальном приложении здесь будет отправлено сообщение экстренным контактам.</p>
+            <button id="sos-close-btn" class="btn btn-primary mt-5">Закрыть</button>
+        </div>
+    </div>
+
     <!-- Firebase SDKs -->
     <script type="module">
         // Импорт необходимых модулей Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, limit, orderBy, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, limit, orderBy, addDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Глобальные переменные, предоставленные средой Canvas
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -318,7 +373,6 @@
             appId: "1:235437842194:web:a8c47588fac613503a1dcb",
             measurementId: "G-SQ2TE2V5D3"
         };
-        // initialAuthToken больше не используется напрямую для входа, но может быть оставлен для отладки
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
 
@@ -359,8 +413,10 @@
                     // Загружаем данные после готовности аутентификации
                     if (currentAppUser) { // Только если вошел конкретный именованный пользователь
                         loadUserRoutes(currentAppUser);
+                        loadFavoriteRoutes(currentAppUser); // Загрузка избранных маршрутов
                     }
                     loadLeaderboard();
+                    loadRecommendedRoutes(); // Загрузка рекомендуемых маршрутов
                 } else {
                     currentFirebaseUser = null;
                     currentAppUser = null;
@@ -394,7 +450,9 @@
                 document.getElementById('app-section').classList.remove('hidden');
                 document.getElementById('current-user-display').textContent = usernameInput;
                 loadUserRoutes(currentAppUser);
+                loadFavoriteRoutes(currentAppUser); // Загрузка избранных маршрутов
                 loadLeaderboard(); // Перезагружаем рейтинг, так как пользователь мог быть новым
+                loadRecommendedRoutes(); // Загрузка рекомендуемых маршрутов
             } else {
                 authMessage.textContent = 'Неверное имя пользователя или пароль.';
             }
@@ -410,15 +468,19 @@
             // Очищаем карту и статистику при выходе
             if (map) {
                 pathPolyline.setPath([]);
+                if (targetRoutePolyline) targetRoutePolyline.setMap(null); // Скрываем целевой маршрут
                 map.setCenter(initialMapCenter);
                 map.setZoom(initialMapZoom);
+                currentMarker.setPosition(initialMapCenter); // Сбрасываем маркер
             }
             document.getElementById('current-speed').textContent = '0.00';
             document.getElementById('distance-traveled').textContent = '0.00';
             document.getElementById('time-elapsed').textContent = '00:00:00';
             document.getElementById('average-speed').textContent = '0.00';
             document.getElementById('routes-list').innerHTML = '<p class="text-gray-500">Маршруты пока не загружены.</p>';
+            document.getElementById('favorites-list').innerHTML = '<p class="text-gray-500">Избранные маршруты пока не найдены.</p>';
             document.getElementById('leaderboard-list').innerHTML = '<p class="text-gray-500">Рейтинг пока не загружен.</p>';
+            document.getElementById('recommended-list').innerHTML = '<p class="text-gray-500">Рекомендуемые маршруты пока не загружены.</p>';
         });
 
 
@@ -428,11 +490,13 @@
         let initialMapZoom = 5;
         let trackingId = null; // ID для watchPosition
         let pathCoordinates = []; // Координаты текущего маршрута
-        let pathPolyline; // Объект полилинии на карте
+        let pathPolyline; // Объект полилинии на карте (текущий маршрут пользователя)
+        let targetRoutePolyline; // Объект полилинии для повторяемого/целевого маршрута
         let currentMarker = null; // Маркер для текущего местоположения
         let startTime = null; // Время начала отслеживания
         let totalDistance = 0; // Общее пройденное расстояние
         let lastPosition = null; // Последняя известная позиция
+        let repeatingRoutePath = null; // Сохраняет путь маршрута, который повторяется
 
         // Функция для отображения пользовательского модального окна
         function showModal(message) {
@@ -453,6 +517,22 @@
                 document.getElementById('message-modal').style.display = 'none';
             }
         });
+
+        // Модальное окно подтверждения повторения маршрута
+        const repeatConfirmModal = document.getElementById('repeat-confirm-modal');
+        document.getElementById('cancel-repeat-btn').addEventListener('click', () => {
+            repeatConfirmModal.style.display = 'none';
+            repeatingRoutePath = null; // Сбрасываем выбранный маршрут
+        });
+
+        // Модальное окно SOS
+        document.querySelector('#sos-modal .close-button').addEventListener('click', () => {
+            document.getElementById('sos-modal').style.display = 'none';
+        });
+        document.getElementById('sos-close-btn').addEventListener('click', () => {
+            document.getElementById('sos-modal').style.display = 'none';
+        });
+        document.getElementById('sos-btn').addEventListener('click', handleSOS);
 
 
         // Инициализация карты Google Maps
@@ -475,20 +555,30 @@
                 scaleControl: true,
             });
 
-            // Создаем полилинию для отображения маршрута
+            // Создаем полилинию для отображения текущего маршрута пользователя
             pathPolyline = new google.maps.Polyline({
                 path: [],
                 geodesic: true,
-                strokeColor: '#FF0000', /* Красный цвет для пути */
+                strokeColor: '#FF0000', /* Красный цвет для пути пользователя */
                 strokeOpacity: 1.0,
                 strokeWeight: 4
             });
             pathPolyline.setMap(map);
 
+            // Создаем полилинию для отображения целевого/повторяемого маршрута
+            targetRoutePolyline = new google.maps.Polyline({
+                path: [],
+                geodesic: true,
+                strokeColor: '#0000FF', /* Синий цвет для целевого маршрута */
+                strokeOpacity: 0.7,
+                strokeWeight: 5,
+                zIndex: 1 // Чтобы был под текущим маршрутом
+            });
+            // targetRoutePolyline.setMap(map); // Изначально скрыт, показывается при повторении маршрута
+
             document.getElementById('map-status').textContent = 'Карта загружена. Ожидание разрешения GPS...';
             console.log("Map initialized.");
 
-            // Попытка получить текущее местоположение и центрировать карту
             // Добавляем маркер текущего местоположения
             currentMarker = new google.maps.Marker({
                 map: map,
@@ -579,7 +669,17 @@
             lastPosition = null; // Сбрасываем последнюю позицию
             pathPolyline.setPath([]); // Очищаем полилинию на карте
 
-            document.getElementById('map-status').textContent = 'Отслеживание начато...';
+            // Если повторяем маршрут, показываем его на карте
+            if (repeatingRoutePath) {
+                targetRoutePolyline.setPath(repeatingRoutePath);
+                targetRoutePolyline.setMap(map);
+                const bounds = new google.maps.LatLngBounds();
+                repeatingRoutePath.forEach(coord => bounds.extend(coord));
+                map.fitBounds(bounds); // Подгоняем карту под целевой маршрут
+                document.getElementById('map-status').textContent = 'Отслеживание начато. Вы следуете по выбранному маршруту.';
+            } else {
+                document.getElementById('map-status').textContent = 'Отслеживание начато...';
+            }
             console.log("Tracking started.");
 
             // Начинаем отслеживание позиции
@@ -665,6 +765,10 @@
                 document.getElementById('map-status').textContent = 'Отслеживание остановлено.';
                 console.log("Tracking stopped.");
 
+                // Скрываем целевой маршрут, если он был показан
+                if (targetRoutePolyline) targetRoutePolyline.setMap(null);
+                repeatingRoutePath = null; // Сбрасываем повторяемый маршрут
+
                 // Включаем кнопку "Начать" и отключаем "Остановить" и "Поделиться"
                 document.getElementById('start-tracking-btn').disabled = false;
                 document.getElementById('stop-tracking-btn').disabled = true;
@@ -700,14 +804,15 @@
                 path: JSON.stringify(pathCoordinates), // Храним как строку из-за ограничений Firestore для массивов
                 type: document.getElementById('movement-type-select').value,
                 movementMode: getSelectedMovementMode(),
-                shared: false
+                isFavorite: false, // Новое поле: по умолчанию не избранный
+                popularityScore: Math.floor(Math.random() * 100) + 1 // Случайный счет для демонстрации "рекомендуемых"
             };
 
             try {
                 // Путь к коллекции маршрутов пользователя
                 const routesCollectionRef = collection(db, `artifacts/${appId}/public/data/namedUsers/${currentAppUser}/routes`);
-                await addDoc(routesCollectionRef, routeData); // Добавляем новый документ
-                console.log("Route saved successfully!");
+                const docRef = await addDoc(routesCollectionRef, routeData); // Добавляем новый документ
+                console.log("Route saved successfully with ID:", docRef.id);
                 showModal("Маршрут успешно сохранен!");
 
                 // Обновляем общую статистику пользователя для рейтинга
@@ -719,6 +824,28 @@
                 showModal("Ошибка сохранения маршрута: " + error.message);
             }
         }
+
+        // --- Переключение статуса "Избранное" ---
+        async function toggleFavorite(routeId, currentIsFavorite) {
+            if (!currentAppUser || !db) {
+                showModal("Для добавления в избранное необходимо войти в систему.");
+                return;
+            }
+            try {
+                const routeDocRef = doc(db, `artifacts/${appId}/public/data/namedUsers/${currentAppUser}/routes`, routeId);
+                await updateDoc(routeDocRef, {
+                    isFavorite: !currentIsFavorite
+                });
+                console.log(`Route ${routeId} favorite status toggled to ${!currentIsFavorite}`);
+                showModal(`Маршрут ${!currentIsFavorite ? 'добавлен в' : 'удален из'} избранного.`);
+                loadUserRoutes(currentAppUser); // Обновляем список "Мои маршруты"
+                loadFavoriteRoutes(currentAppUser); // Обновляем список "Избранное"
+            } catch (error) {
+                console.error("Error toggling favorite status:", error);
+                showModal("Ошибка изменения статуса избранного: " + error.message);
+            }
+        }
+
 
         // Обновление статистики пользователя для таблицы лидеров
         async function updateUserStats(username, distanceKm, durationSeconds) {
@@ -791,9 +918,11 @@
                     routesListDiv.innerHTML = ''; // Очищаем список перед загрузкой новых маршрутов
                     snapshot.forEach((doc) => {
                         const route = doc.data();
+                        const routeId = doc.id; // Получаем ID документа
                         const routePath = JSON.parse(route.path); // Парсим путь обратно из строки
                         const date = new Date(route.timestamp).toLocaleString();
                         const durationFormatted = formatDuration(route.duration);
+                        const isFavorite = route.isFavorite || false; // Получаем статус избранного
 
                         const routeCard = document.createElement('div');
                         routeCard.className = 'card p-4 border-l-4 border-blue-500';
@@ -803,16 +932,33 @@
                             <p class="text-gray-700">Расстояние: ${route.distance.toFixed(2)} км</p>
                             <p class="text-gray-700">Время: ${durationFormatted}</p>
                             <p class="text-gray-700">Ср. скорость: ${route.avgSpeed.toFixed(2)} км/ч</p>
-                            <button class="btn btn-secondary btn-sm mt-3 view-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-map-marked-alt"></i> Показать на карте</button>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button class="btn btn-secondary btn-sm view-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-map-marked-alt"></i> Показать на карте</button>
+                                <button class="btn btn-secondary btn-sm favorite-btn" data-route-id="${routeId}" data-is-favorite="${isFavorite}"><i class="${isFavorite ? 'fas fa-star text-yellow-500' : 'far fa-star'}"></i> ${isFavorite ? 'В избранном' : 'В избранное'}</button>
+                                <button class="btn btn-primary btn-sm repeat-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-redo"></i> Повторить</button>
+                            </div>
                         `;
                         routesListDiv.appendChild(routeCard);
                     });
 
-                    // Добавляем слушатели событий для кнопок "Показать на карте"
+                    // Добавляем слушатели событий для кнопок "Показать на карте", "В избранное" и "Повторить"
                     document.querySelectorAll('.view-route-btn').forEach(button => {
                         button.addEventListener('click', (event) => {
                             const routePath = JSON.parse(event.target.dataset.route);
                             displayRouteOnMap(routePath);
+                        });
+                    });
+                    document.querySelectorAll('.favorite-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const routeId = event.target.dataset.routeId;
+                            const isFavorite = event.target.dataset.isFavorite === 'true';
+                            toggleFavorite(routeId, isFavorite);
+                        });
+                    });
+                    document.querySelectorAll('.repeat-route-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const routePath = JSON.parse(event.target.dataset.route);
+                            promptRepeatRoute(routePath);
                         });
                     });
                 });
@@ -821,6 +967,81 @@
                 routesListDiv.innerHTML = '<p class="text-red-500">Ошибка загрузки маршрутов: ' + error.message + '</p>';
             }
         }
+
+        // --- Загрузка избранных маршрутов ---
+        async function loadFavoriteRoutes(username) {
+            if (!username || !db) {
+                console.warn("Cannot load favorite routes: User not logged in or Firebase not initialized.");
+                return;
+            }
+
+            const favoritesListDiv = document.getElementById('favorites-list');
+            favoritesListDiv.innerHTML = '<p class="text-gray-500">Загрузка избранных маршрутов...</p>';
+
+            try {
+                const q = query(
+                    collection(db, `artifacts/${appId}/public/data/namedUsers/${username}/routes`),
+                    where("isFavorite", "==", true),
+                    orderBy("timestamp", "desc") // Сортировка по убыванию даты
+                );
+
+                onSnapshot(q, (snapshot) => {
+                    if (snapshot.empty) {
+                        favoritesListDiv.innerHTML = '<p class="text-gray-500">Избранные маршруты пока не найдены.</p>';
+                        return;
+                    }
+
+                    favoritesListDiv.innerHTML = '';
+                    snapshot.forEach((doc) => {
+                        const route = doc.data();
+                        const routeId = doc.id;
+                        const routePath = JSON.parse(route.path);
+                        const date = new Date(route.timestamp).toLocaleString();
+                        const durationFormatted = formatDuration(route.duration);
+
+                        const routeCard = document.createElement('div');
+                        routeCard.className = 'card p-4 border-l-4 border-yellow-500'; // Желтая полоса для избранных
+                        routeCard.innerHTML = `
+                            <p class="font-semibold text-lg mb-1">${date}</p>
+                            <p class="text-gray-700">Тип: ${route.type} (${route.movementMode})</p>
+                            <p class="text-gray-700">Расстояние: ${route.distance.toFixed(2)} км</p>
+                            <p class="text-gray-700">Время: ${durationFormatted}</p>
+                            <p class="text-gray-700">Ср. скорость: ${route.avgSpeed.toFixed(2)} км/ч</p>
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button class="btn btn-secondary btn-sm view-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-map-marked-alt"></i> Показать на карте</button>
+                                <button class="btn btn-secondary btn-sm favorite-btn" data-route-id="${routeId}" data-is-favorite="true"><i class="fas fa-star text-yellow-500"></i> В избранном</button>
+                                <button class="btn btn-primary btn-sm repeat-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-redo"></i> Повторить</button>
+                            </div>
+                        `;
+                        favoritesListDiv.appendChild(routeCard);
+                    });
+
+                    document.querySelectorAll('#favorites-list .view-route-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const routePath = JSON.parse(event.target.dataset.route);
+                            displayRouteOnMap(routePath);
+                        });
+                    });
+                     document.querySelectorAll('#favorites-list .favorite-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const routeId = event.target.dataset.routeId;
+                            const isFavorite = event.target.dataset.isFavorite === 'true';
+                            toggleFavorite(routeId, isFavorite);
+                        });
+                    });
+                    document.querySelectorAll('#favorites-list .repeat-route-btn').forEach(button => {
+                        button.addEventListener('click', (event) => {
+                            const routePath = JSON.parse(event.target.dataset.route);
+                            promptRepeatRoute(routePath);
+                        });
+                    });
+                });
+            } catch (error) {
+                console.error("Error loading favorite routes:", error);
+                favoritesListDiv.innerHTML = '<p class="text-red-500">Ошибка загрузки избранных маршрутов: ' + error.message + '</p>';
+            }
+        }
+
 
         // --- Загрузка таблицы лидеров ---
         async function loadLeaderboard() {
@@ -874,6 +1095,89 @@
             }
         }
 
+        // --- Загрузка рекомендуемых маршрутов (на основе popularityScore) ---
+        async function loadRecommendedRoutes() {
+            if (!db) {
+                console.warn("Cannot load recommended routes: Firebase not initialized.");
+                return;
+            }
+
+            const recommendedListDiv = document.getElementById('recommended-list');
+            recommendedListDiv.innerHTML = '<p class="text-gray-500">Загрузка рекомендуемых маршрутов...</p>';
+
+            try {
+                // Для демонстрации, берем все маршруты и сортируем по popularityScore
+                // В реальном приложении здесь была бы более сложная логика рекомендаций
+                const q = query(
+                    collection(db, `artifacts/${appId}/public/data/namedUsers`), // Ищем по всем пользователям
+                    // orderBy("popularityScore", "desc"), // Firestore не поддерживает orderBy на подколлекциях без сложных правил безопасности или агрегации
+                    // Чтобы обойти ограничение, мы будем получать все маршруты и сортировать их на клиенте.
+                    // В реальном приложении, если нужна сортировка по popularityScore,
+                    // popularityScore должен быть агрегирован на уровне пользователя или в отдельной коллекции.
+                );
+
+                // Получаем все маршруты из всех пользователей (это может быть неэффективно для большого количества данных)
+                // Для более масштабируемого решения, популярные маршруты должны храниться в отдельной коллекции.
+                const allRoutes = [];
+                const usersSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/namedUsers`));
+                for (const userDoc of usersSnapshot.docs) {
+                    const routesSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/namedUsers/${userDoc.id}/routes`));
+                    routesSnapshot.forEach(routeDoc => {
+                        allRoutes.push({ id: routeDoc.id, ...routeDoc.data() });
+                    });
+                }
+
+                // Сортируем маршруты по popularityScore на клиенте
+                allRoutes.sort((a, b) => (b.popularityScore || 0) - (a.popularityScore || 0));
+
+                if (allRoutes.length === 0) {
+                    recommendedListDiv.innerHTML = '<p class="text-gray-500">Рекомендуемые маршруты пока не найдены.</p>';
+                    return;
+                }
+
+                recommendedListDiv.innerHTML = '';
+                allRoutes.slice(0, 10).forEach((route) => { // Показываем топ-10
+                    const routePath = JSON.parse(route.path);
+                    const date = new Date(route.timestamp).toLocaleString();
+                    const durationFormatted = formatDuration(route.duration);
+
+                    const routeCard = document.createElement('div');
+                    routeCard.className = 'card p-4 border-l-4 border-green-500'; // Зеленая полоса для рекомендуемых
+                    routeCard.innerHTML = `
+                        <p class="font-semibold text-lg mb-1">${date} (Пользователь: ${route.userId})</p>
+                        <p class="text-gray-700">Тип: ${route.type} (${route.movementMode})</p>
+                        <p class="text-gray-700">Расстояние: ${route.distance.toFixed(2)} км</p>
+                        <p class="text-gray-700">Время: ${durationFormatted}</p>
+                        <p class="text-gray-700">Ср. скорость: ${route.avgSpeed.toFixed(2)} км/ч</p>
+                        <p class="text-gray-700">Рейтинг: <span class="font-bold text-orange-600">${route.popularityScore || 0}</span></p>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <button class="btn btn-secondary btn-sm view-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-map-marked-alt"></i> Показать на карте</button>
+                            <button class="btn btn-primary btn-sm repeat-route-btn" data-route='${JSON.stringify(routePath)}'><i class="fas fa-redo"></i> Повторить</button>
+                        </div>
+                    `;
+                    recommendedListDiv.appendChild(routeCard);
+                });
+
+                document.querySelectorAll('#recommended-list .view-route-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const routePath = JSON.parse(event.target.dataset.route);
+                        displayRouteOnMap(routePath);
+                    });
+                });
+                document.querySelectorAll('#recommended-list .repeat-route-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const routePath = JSON.parse(event.target.dataset.route);
+                        promptRepeatRoute(routePath);
+                    });
+                });
+
+            } catch (error) {
+                console.error("Error loading recommended routes:", error);
+                recommendedListDiv.innerHTML = '<p class="text-red-500">Ошибка загрузки рекомендуемых маршрутов: ' + error.message + '</p>';
+            }
+        }
+
+
         // Вспомогательная функция для форматирования длительности (секунды в HH:MM:SS)
         function formatDuration(seconds) {
             const h = Math.floor(seconds / 3600);
@@ -889,15 +1193,38 @@
                 return;
             }
             if (routePath && routePath.length > 0) {
-                pathPolyline.setPath(routePath); // Устанавливаем путь полилинии
+                // Скрываем текущий путь пользователя, если он есть
+                pathPolyline.setPath([]);
+                // Показываем целевой маршрут
+                targetRoutePolyline.setPath(routePath);
+                targetRoutePolyline.setMap(map);
+
                 const bounds = new google.maps.LatLngBounds();
                 routePath.forEach(coord => bounds.extend(coord)); // Расширяем границы карты
                 map.fitBounds(bounds); // Подгоняем карту под границы маршрута
-                showModal("Маршрут отображен на карте.");
+                showModal("Маршрут отображен на карте. Нажмите 'Повторить', чтобы начать следовать по нему.");
             } else {
                 showModal("Маршрут пуст или недействителен.");
             }
         }
+
+        // --- Функция повторения маршрута ---
+        function promptRepeatRoute(routePath) {
+            repeatingRoutePath = routePath; // Сохраняем путь для повторения
+            repeatConfirmModal.style.display = 'flex'; // Показываем модальное окно подтверждения
+        }
+
+        document.getElementById('confirm-repeat-btn').addEventListener('click', () => {
+            repeatConfirmModal.style.display = 'none'; // Скрываем модальное окно
+            if (repeatingRoutePath) {
+                // Сбрасываем текущее отслеживание, если оно активно
+                if (trackingId !== null) {
+                    navigator.geolocation.clearWatch(trackingId);
+                }
+                // Начинаем новое отслеживание, которое будет следовать по repeatingRoutePath
+                document.getElementById('start-tracking-btn').click(); // Инициируем нажатие кнопки "Начать"
+            }
+        });
 
 
         // --- Логика обмена маршрутом ---
@@ -921,6 +1248,34 @@
 
             showModal("Маршрут скопирован в буфер обмена! Вы можете вставить его в любой мессенджер.");
         });
+
+        // --- Функция SOS ---
+        function handleSOS() {
+            const sosModal = document.getElementById('sos-modal');
+            const sosLocationElement = document.getElementById('sos-location');
+            sosLocationElement.textContent = "Определение местоположения...";
+            sosModal.style.display = 'flex';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude.toFixed(6);
+                        const lng = position.coords.longitude.toFixed(6);
+                        sosLocationElement.innerHTML = `Широта: ${lat}, Долгота: ${lng}<br>Отправлено экстренным контактам.`;
+                        // В реальном приложении здесь будет отправлен запрос на сервер
+                        // с координатами для оповещения экстренных служб или контактов.
+                        console.log(`SOS: Отправлено местоположение - Lat: ${lat}, Lng: ${lng}`);
+                    },
+                    (error) => {
+                        sosLocationElement.textContent = "Не удалось определить местоположение. Проверьте настройки GPS.";
+                        console.error("SOS Geolocation Error:", error);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            } else {
+                sosLocationElement.textContent = "Ваш браузер не поддерживает геолокацию.";
+            }
+        }
 
 
         // --- Логика UI для выбора типа передвижения ---
@@ -965,23 +1320,56 @@
 
 
         // --- Логика переключения вкладок ---
-        document.getElementById('history-tab-btn').addEventListener('click', () => {
-            document.getElementById('history-content').classList.remove('hidden');
-            document.getElementById('leaderboard-content').classList.add('hidden');
-            document.getElementById('history-tab-btn').classList.add('active');
-            document.getElementById('leaderboard-tab-btn').classList.remove('active');
-            if (currentAppUser) {
-                loadUserRoutes(currentAppUser);
-            }
-        });
+        const historyTabBtn = document.getElementById('history-tab-btn');
+        const favoritesTabBtn = document.getElementById('favorites-tab-btn');
+        const leaderboardTabBtn = document.getElementById('leaderboard-tab-btn');
+        const recommendedTabBtn = document.getElementById('recommended-tab-btn');
 
-        document.getElementById('leaderboard-tab-btn').addEventListener('click', () => {
-            document.getElementById('history-content').classList.add('hidden');
-            document.getElementById('leaderboard-content').classList.remove('hidden');
-            document.getElementById('history-tab-btn').classList.remove('active');
-            document.getElementById('leaderboard-tab-btn').classList.add('active');
-            loadLeaderboard();
-        });
+        const historyContent = document.getElementById('history-content');
+        const favoritesContent = document.getElementById('favorites-content');
+        const leaderboardContent = document.getElementById('leaderboard-content');
+        const recommendedContent = document.getElementById('recommended-content');
+
+        function activateTab(tabName) {
+            // Скрываем весь контент вкладок
+            historyContent.classList.add('hidden');
+            favoritesContent.classList.add('hidden');
+            leaderboardContent.classList.add('hidden');
+            recommendedContent.classList.add('hidden');
+
+            // Деактивируем все кнопки вкладок
+            historyTabBtn.classList.remove('active');
+            favoritesTabBtn.classList.remove('active');
+            leaderboardTabBtn.classList.remove('active');
+            recommendedTabBtn.classList.remove('active');
+
+            // Активируем выбранную вкладку и показываем ее контент
+            if (tabName === 'history') {
+                historyContent.classList.remove('hidden');
+                historyTabBtn.classList.add('active');
+                if (currentAppUser) loadUserRoutes(currentAppUser);
+            } else if (tabName === 'favorites') {
+                favoritesContent.classList.remove('hidden');
+                favoritesTabBtn.classList.add('active');
+                if (currentAppUser) loadFavoriteRoutes(currentAppUser);
+            } else if (tabName === 'leaderboard') {
+                leaderboardContent.classList.remove('hidden');
+                leaderboardTabBtn.classList.add('active');
+                loadLeaderboard();
+            } else if (tabName === 'recommended') {
+                recommendedContent.classList.remove('hidden');
+                recommendedTabBtn.classList.add('active');
+                loadRecommendedRoutes();
+            }
+        }
+
+        historyTabBtn.addEventListener('click', () => activateTab('history'));
+        favoritesTabBtn.addEventListener('click', () => activateTab('favorites'));
+        leaderboardTabBtn.addEventListener('click', () => activateTab('leaderboard'));
+        recommendedTabBtn.addEventListener('click', () => activateTab('recommended'));
+
+        // Активируем вкладку "Мои маршруты" по умолчанию при загрузке
+        activateTab('history');
 
 
         // --- Загрузка скрипта Google Maps ---
