@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SprintTrack - Отслеживание активности</title>
-    <!-- Tailwind CSS CDN для стилизации -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Шрифт Inter для гармоничного и современного вида -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome для иконок -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Основные стили для тела страницы, градиентный фон для жизнерадостности */
@@ -157,7 +154,6 @@
 <body>
     <h1 class="text-4xl font-bold text-gray-800 mb-6 mt-4">SprintTrack</h1>
 
-    <!-- Секция аутентификации -->
     <div id="auth-section" class="container text-center">
         <h2 class="text-2xl font-semibold mb-6">Вход в SprintTrack</h2>
         <div class="mb-4">
@@ -168,7 +164,6 @@
         <p id="auth-message" class="text-red-500 mt-3"></p>
     </div>
 
-    <!-- Основная секция приложения (скрыта до аутентификации) -->
     <div id="app-section" class="container hidden">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-semibold">Привет, <span id="current-user-display"></span>!</h2>
@@ -176,7 +171,6 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Карта и элементы управления -->
             <div class="lg:col-span-2 card p-5">
                 <h3 class="text-xl font-semibold mb-4">Ваш маршрут</h3>
                 <div id="map"></div>
@@ -206,9 +200,7 @@
                 </div>
             </div>
 
-            <!-- Настройки и статистика -->
             <div class="lg:col-span-1 flex flex-col gap-6">
-                <!-- Выбор типа передвижения -->
                 <div class="card p-5">
                     <h3 class="text-xl font-semibold mb-4">Тип передвижения</h3>
                     <select id="movement-type-select" class="input-field mb-4">
@@ -219,7 +211,6 @@
                         <option value="mountainbike">Горный велосипед</option>
                     </select>
 
-                    <!-- Опции для "Пешком" -->
                     <div id="walking-options" class="hidden">
                         <label class="block mb-2"><input type="radio" name="walking-mode" value="sprint" checked> Спринт</label>
                         <label class="block mb-2"><input type="radio" name="walking-mode" value="walk"> Ходьба</label>
@@ -227,7 +218,6 @@
                         <label class="block mb-2"><input type="radio" name="walking-mode" value="hiking"> Хайкинг</label>
                     </div>
 
-                    <!-- Опции для "Велосипед" -->
                     <div id="cycling-options" class="hidden">
                         <label class="block mb-2"><input type="radio" name="cycling-mode" value="balanced" checked> Сбалансированный</label>
                         <p class="text-sm text-gray-600 mb-2">Включает велосипедные дорожки и улицы с низким трафиком. Избегает улиц с ограничением скорости выше 50 км/ч.</p>
@@ -239,48 +229,39 @@
                         <p class="text-sm text-gray-600 mb-2">Маршруты, предпочтительные для нашего велосипедного сообщества, основанные на данных нашей тепловой карты.</p>
                     </div>
 
-                    <!-- Описание для "E-bike" -->
                     <div id="ebike-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Включает больше перепадов высот и избегает ступеней, на которых придётся нести велосипед.</p>
                     </div>
 
-                    <!-- Описание для "Плавная езда" (общая концепция, не отдельный тип) -->
                     <div id="smooth-ride-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Приоритет на комфорт и безопасность, избегает препятствий, таких как лестницы, встроенные рельсы, гравий, песок, брусчатка и плотное движение.</p>
                     </div>
 
-                    <!-- Описание для "Шоссейный велосипед" -->
                     <div id="roadbike-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Оптимизирует поездку для скорости и эффективности. Непокрытые дороги будут избегаться по возможности.</p>
                     </div>
 
-                    <!-- Описание для "Горный велосипед" -->
                     <div id="mountainbike-options" class="hidden">
                         <p class="text-sm text-gray-600 mb-2">Включите пересечённую местность, маршруты для горных велосипедов и больше перепадов высот на маршруте.</p>
                     </div>
                 </div>
 
-                <!-- Вкладки для Истории и Рейтинга -->
                 <div class="card p-5 flex-grow">
                     <div class="flex mb-4 border-b border-gray-200">
                         <button id="history-tab-btn" class="tab-button active mr-2">Мои маршруты</button>
                         <button id="leaderboard-tab-btn" class="tab-button">Рейтинг</button>
                     </div>
 
-                    <!-- Контент вкладки "Мои маршруты" -->
                     <div id="history-content">
                         <h3 class="text-xl font-semibold mb-4">Последние маршруты</h3>
                         <div id="routes-list" class="space-y-3">
-                            <!-- Маршруты будут загружены здесь -->
                             <p class="text-gray-500">Маршруты пока не загружены.</p>
                         </div>
                     </div>
 
-                    <!-- Контент вкладки "Рейтинг" (скрыт по умолчанию) -->
                     <div id="leaderboard-content" class="hidden">
                         <h3 class="text-xl font-semibold mb-4">Рейтинг участников</h3>
                         <div id="leaderboard-list" class="space-y-3">
-                            <!-- Рейтинг будет загружен здесь -->
                             <p class="text-gray-500">Рейтинг пока не загружен.</p>
                         </div>
                     </div>
@@ -289,7 +270,6 @@
         </div>
     </div>
 
-    <!-- Пользовательское модальное окно для сообщений (вместо alert/confirm) -->
     <div id="message-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -298,17 +278,28 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         // Импорт необходимых модулей Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, limit, orderBy, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Глобальные переменные, предоставленные средой Canvas
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        
+        // Ваша конфигурация Firebase (обновлено)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBaO6MfwDB0CCgvDto7VmHgJxN_e-ZsIgE",
+            authDomain: "sprinttrack-941b5.firebaseapp.com",
+            projectId: "sprinttrack-941b5",
+            storageBucket: "sprinttrack-941b5.firebasestorage.app",
+            messagingSenderId: "235437842194",
+            appId: "1:235437842194:web:a8c47588fac613503a1dcb",
+            measurementId: "G-SQ2TE2V5D3"
+        };
+        // initialAuthToken больше не используется напрямую для входа, но может быть оставлен для отладки
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
 
         // Переменные для инициализации Firebase
         let app, db, auth;
@@ -321,50 +312,26 @@
             db = getFirestore(app);
             auth = getAuth(app);
 
-            // Вход с использованием предоставленного токена или анонимно
-            if (initialAuthToken) {
-                signInWithCustomToken(auth, initialAuthToken).then((userCredential) => {
-                    currentFirebaseUser = userCredential.user;
-                    console.log("Firebase signed in with custom token:", currentFirebaseUser.uid);
-                    // Если успешно вошли, скрываем секцию аутентификации и показываем приложение
-                    document.getElementById('auth-section').classList.add('hidden');
-                    document.getElementById('app-section').classList.remove('hidden');
-                    document.getElementById('current-user-display').textContent = 'Гость'; // По умолчанию для пользователя Canvas
-                }).catch((error) => {
-                    console.error("Error signing in with custom token:", error);
-                    showModal("Ошибка входа: " + error.message);
-                    // В случае ошибки с токеном, пробуем анонимный вход
-                    signInAnonymously(auth).then((userCredential) => {
-                        currentFirebaseUser = userCredential.user;
-                        console.log("Firebase signed in anonymously:", currentFirebaseUser.uid);
-                        document.getElementById('auth-section').classList.add('hidden');
-                        document.getElementById('app-section').classList.remove('hidden');
-                        document.getElementById('current-user-display').textContent = 'Гость';
-                    }).catch((anonError) => {
-                        console.error("Error signing in anonymously:", anonError);
-                        showModal("Критическая ошибка Firebase: " + anonError.message);
-                    });
-                });
-            } else {
-                // Если токен не предоставлен, анонимный вход
-                signInAnonymously(auth).then((userCredential) => {
-                    currentFirebaseUser = userCredential.user;
-                    console.log("Firebase signed in anonymously:", currentFirebaseUser.uid);
-                    document.getElementById('auth-section').classList.add('hidden');
-                    document.getElementById('app-section').classList.remove('hidden');
-                    document.getElementById('current-user-display').textContent = 'Гость';
-                }).catch((error) => {
-                    console.error("Error signing in anonymously:", error);
-                    showModal("Критическая ошибка Firebase: " + error.message);
-                });
-            }
+            // Всегда пытаемся войти анонимно при запуске
+            signInAnonymously(auth).then((userCredential) => {
+                currentFirebaseUser = userCredential.user;
+                console.log("Firebase signed in anonymously:", currentFirebaseUser.uid);
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                // Отображаем UID анонимного пользователя или "Гость"
+                document.getElementById('current-user-display').textContent = 'Гость (' + currentFirebaseUser.uid.substring(0, 8) + '...)';
+            }).catch((error) => {
+                console.error("Error signing in anonymously:", error);
+                showModal("Критическая ошибка Firebase при анонимном входе: " + error.message);
+            });
 
             // Слушатель изменений состояния аутентификации
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentFirebaseUser = user;
                     console.log("Auth state changed, user:", user.uid);
-                    // Если вошел пользователь приложения, используем его имя, иначе 'Гость'
+                    // Если вошел пользователь приложения (через 'Renard'), используем его имя
+                    // Иначе (для анонимного входа), отображаем 'Гость'
                     if (!currentAppUser) {
                         document.getElementById('current-user-display').textContent = 'Гость (' + user.uid.substring(0, 8) + '...)';
                     }
@@ -961,7 +928,6 @@
         // Эта функция будет вызвана после готовности DOM для внедрения скрипта Google Maps
         function loadGoogleMapsScript() {
             const googleMapsApiKey = "AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0"; // Ваш реальный ключ API
-            // Удалена проверка на равенство ключа API с жестко закодированной строкой
             if (!googleMapsApiKey) {
                 showModal("Ошибка: Отсутствует ключ Google Maps API. Пожалуйста, убедитесь, что ключ API указан в коде.");
                 document.getElementById('map-status').textContent = "Ошибка: Отсутствует ключ Google Maps API.";
@@ -985,6 +951,5 @@
         });
 
     </script>
-    <!-- Скрипт Google Maps API будет загружен динамически вышеуказанным JavaScript -->
-</body>
+    </body>
 </html>
