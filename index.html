@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SprintTrack - Отслеживание Активности</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Стили для плавного появления элементов */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Кастомные стили для лучшего вида */
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+         #map {
+            height: 100%;
+            width: 100%;
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+        .map-container {
+            flex-grow: 1;
+            height: 100%;
+            position: relative; /* Нужно для позиционирования оверлея */
+        }
+        .sidebar {
+            width: 380px;
+            flex-shrink: 0;
+            height: 100%;
+            overflow-y: auto;
+            transition: width 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column-reverse;
+            }
+            .sidebar {
+                width: 100%;
+                height: 50vh; /* Половина экрана на мобильных */
+                flex-shrink: 1;
+            }
+            .map-container {
+                height: 50vh;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Экран входа и регистрации -->
+    <div id="auth-screen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center fade-in">
+            <h1 class="text-3xl font-bold text-teal-600 mb-2">SprintTrack</h1>
+            <p class="text-gray-500 mb-6">Ваш трекер активности</p>
+            
+            <div id="auth-container">
+                <!-- Форма входа -->
+                <form id="login-form" class="space-y-4">
+                    <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                    <input type="password" id="login-password" placeholder="Пароль" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                    <button type="submit" class="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition duration-300">Войти</button>
+                </form>
+                <p class="mt-4 text-sm">Нет аккаунта? <a href="#" id="show-register" class="text-teal-500 hover:underline">Зарегистрироваться</a></p>
+            </div>
+
+            <div id="register-container" class="hidden">
+                <!-- Форма регистрации -->
+                <form id="register-form" class="space-y-4">
+                    <input type="email" id="register-email" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                    <input type="password" id="register-password" placeholder="Пароль (мин. 6 символов)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                    <button type="submit" class="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition duration-300">Создать аккаунт</button>
+                </form>
+                <p class="mt-4 text-sm">Уже есть аккаунт? <a href="#" id="show-login" class="text-teal-500 hover:underline">Войти</a></p>
+            </div>
+            <p id="auth-error" class="text-red-500 mt-4 text-sm h-4"></p>
+        </div>
+    </div>
+
+    <!-- Основной интерфейс приложения -->
+    <div id="app-screen" class="hidden main-container">
+        <div class="sidebar bg-white p-4 sm:p-6 flex flex-col">
+            <header class="flex items-center justify-between pb-4 border-b">
+                <div>
+                    <h1 class="text-2xl font-bold text-teal-600">SprintTrack</h1>
+                    <p id="user-email" class="text-sm text-gray-500"></p>
+                </div>
+                <button id="logout-button" class="text-gray-500 hover:text-red-500 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </header>
+
+            <!-- Панель управления трекингом -->
+            <div id="tracking-controls" class="my-6 space-y-4">
+                 <div>
+                    <label for="activity-type" class="block text-sm font-medium text-gray-700 mb-1">Тип активности</label>
+                    <select id="activity-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        <option value="walking">Пешком</option>
+                        <option value="cycling">Велосипед</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="activity-subtype" class="block text-sm font-medium text-gray-700 mb-1">Подтип</label>
+                    <select id="activity-subtype" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"></select>
+                </div>
+                <button id="start-tracking" class="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition flex items-center justify-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>Начать трекинг</span>
+                </button>
+                <button id="stop-tracking" class="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition hidden flex items-center justify-center space-x-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"></path></svg>
+                    <span>Остановить</span>
+                </button>
+            </div>
+
+            <!-- Статистика в реальном времени -->
+            <div id="stats-display" class="grid grid-cols-2 gap-4 text-center hidden">
+                <div class="bg-teal-50 p-3 rounded-lg">
+                    <p class="text-sm text-teal-700">Время</p>
+                    <p id="stat-duration" class="text-xl font-bold text-teal-900">00:00:00</p>
+                </div>
+                <div class="bg-orange-50 p-3 rounded-lg">
+                    <p class="text-sm text-orange-700">Дистанция</p>
+                    <p id="stat-distance" class="text-xl font-bold text-orange-900">0.00 км</p>
+                </div>
+                <div class="bg-indigo-50 p-3 rounded-lg">
+                    <p class="text-sm text-indigo-700">Текущая скорость</p>
+                    <p id="stat-current-speed" class="text-xl font-bold text-indigo-900">0.0 км/ч</p>
+                </div>
+                <div class="bg-pink-50 p-3 rounded-lg">
+                    <p class="text-sm text-pink-700">Средняя скорость</p>
+                    <p id="stat-avg-speed" class="text-xl font-bold text-pink-900">0.0 км/ч</p>
+                </div>
+            </div>
+            
+            <!-- История активностей -->
+            <div class="mt-6 flex-grow overflow-y-auto">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Последние маршруты</h3>
+                <div id="history-list" class="space-y-3">
+                    <p class="text-gray-500 text-sm">Здесь будет ваша история активностей.</p>
+                </div>
+            </div>
+        </div>
+        <div class="map-container">
+            <div id="map"></div>
+            <!-- Оверлей для ошибки API ключа -->
+            <div id="map-api-error-overlay" class="hidden absolute inset-0 bg-red-100 bg-opacity-95 flex items-center justify-center z-10 p-4 text-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-red-800 mb-4">Ошибка загрузки карты</h2>
+                    <p class="text-red-700">
+                        Похоже, вы не указали действительный ключ Google Maps API.
+                        <br><br>
+                        Пожалуйста, откройте код этого приложения, найдите строку с
+                        <code class="bg-red-200 text-red-900 p-1 rounded font-mono">YOUR_GOOGLE_MAPS_API_KEY</code>
+                        и замените его вашим собственным ключом API.
+                    </p>
+                    <a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank" class="mt-6 inline-block bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">
+                        Как получить ключ API
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно для шаринга -->
+    <div id="share-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center fade-in">
+            <h2 class="text-2xl font-bold mb-4">Поделиться маршрутом</h2>
+            <p class="text-gray-600 mb-6">Ваш маршрут сохранен! Вы можете поделиться ссылкой с друзьями.</p>
+            <input type="text" id="share-link" class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 mb-4" readonly>
+            <div class="flex space-x-4 justify-center">
+                <button id="copy-link-btn" class="bg-teal-500 text-white px-6 py-2 rounded-lg hover:bg-teal-600">Копировать</button>
+                <button id="close-share-modal-btn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-400">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Кастомное модальное окно для уведомлений -->
+    <div id="custom-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-[60]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center fade-in">
+            <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
+            <p id="modal-message" class="text-gray-600 mb-6"></p>
+            <button id="modal-close-btn" class="bg-teal-500 text-white px-8 py-2 rounded-lg hover:bg-teal-600">OK</button>
+        </div>
+    </div>
+
+    <!-- 
+        !!! ВАЖНО !!!
+        Замените "YOUR_GOOGLE_MAPS_API_KEY" на ваш настоящий ключ Google Maps API.
+        Без этого карта не будет работать.
+    -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
+    
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword, 
+            onAuthStateChanged, 
+            signOut,
+            signInAnonymously,
+            signInWithCustomToken
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore,
+            collection,
+            addDoc,
+            query,
+            where,
+            getDocs,
+            onSnapshot,
+            limit,
+            orderBy as firestoreOrderBy,
+            doc,
+            setDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И КОНФИГУРАЦИЯ ---
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            // Вставьте вашу конфигурацию Firebase здесь, если __firebase_config не определен
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sprinttrack-default';
+
+        // Инициализация Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM элементы
+        const authScreen = document.getElementById('auth-screen');
+        const appScreen = document.getElementById('app-screen');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const authError = document.getElementById('auth-error');
+        const showRegister = document.getElementById('show-register');
+        const showLogin = document.getElementById('show-login');
+        const registerContainer = document.getElementById('register-container');
+        const loginContainer = document.getElementById('auth-container');
+        
+        const userEmailDisplay = document.getElementById('user-email');
+        const logoutButton = document.getElementById('logout-button');
+
+        const activityTypeSelect = document.getElementById('activity-type');
+        const activitySubtypeSelect = document.getElementById('activity-subtype');
+        const startTrackingBtn = document.getElementById('start-tracking');
+        const stopTrackingBtn = document.getElementById('stop-tracking');
+        const statsDisplay = document.getElementById('stats-display');
+        const historyList = document.getElementById('history-list');
+
+        const statDuration = document.getElementById('stat-duration');
+        const statDistance = document.getElementById('stat-distance');
+        const statCurrentSpeed = document.getElementById('stat-current-speed');
+        const statAvgSpeed = document.getElementById('stat-avg-speed');
+        
+        const shareModal = document.getElementById('share-modal');
+        const shareLinkInput = document.getElementById('share-link');
+        const copyLinkBtn = document.getElementById('copy-link-btn');
+        const closeShareModalBtn = document.getElementById('close-share-modal-btn');
+
+        const customModal = document.getElementById('custom-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const mapApiErrorOverlay = document.getElementById('map-api-error-overlay');
+
+        // Глобальные переменные состояния
+        let map;
+        let userMarker;
+        let routePolyline;
+        let watchId;
+        let isTracking = false;
+        let currentPath = [];
+        let startTime;
+        let timerInterval;
+        let totalDistance = 0;
+        let currentUser = null;
+
+        const activitySubtypes = {
+            walking: [
+                { value: 'walk', text: 'Ходьба' },
+                { value: 'run', text: 'Бег' },
+                { value: 'sprint', text: 'Спринт' },
+                { value: 'hiking', text: 'Хайкинг' }
+            ],
+            cycling: [
+                { value: 'balanced', text: 'Сбалансированный' },
+                { value: 'shortest', text: 'Самый короткий' },
+                { value: 'bike_lanes', text: 'Велосипедные дорожки' },
+                { value: 'popular', text: 'Популярные' },
+                { value: 'ebike', text: 'E-bike' },
+                { value: 'smooth', text: 'Плавная езда' },
+                { value: 'road', text: 'Шоссейный велосипед' },
+                { value: 'mtb', text: 'Горный велосипед' }
+            ]
+        };
+
+        // --- ЛОГИКА МОДАЛЬНЫХ ОКОН ---
+        function showCustomModal(title, message) {
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message; // Используем innerHTML для возможности вставки тегов
+            customModal.classList.remove('hidden');
+        }
+
+        modalCloseBtn.addEventListener('click', () => {
+            customModal.classList.add('hidden');
+        });
+        
+        closeShareModalBtn.addEventListener('click', () => {
+            shareModal.classList.add('hidden');
+        });
+
+        // --- ИНИЦИАЛИЗАЦИЯ КАРТЫ И ПРОВЕРКА API ---
+        window.initMap = () => {
+            // Эта функция вызывается скриптом Google Maps ПОСЛЕ успешной загрузки.
+            // Если она не вызвана, значит, произошла ошибка (например, неверный ключ).
+            console.log("Google Maps API loaded successfully.");
+            const initialCoords = { lat: 51.169392, lng: 71.449074 }; // Астана по умолчанию
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: initialCoords,
+                zoom: 15,
+                mapTypeId: 'satellite',
+                disableDefaultUI: true,
+                zoomControl: true,
+            });
+        };
+
+        // Проверяем, загрузился ли API Google Maps после загрузки страницы
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                // Объект `google` определяется только в том случае, если скрипт API загружен правильно.
+                if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
+                    console.error("Google Maps API failed to load. Likely an InvalidKeyMapError.");
+                    // Показываем специальное сообщение об ошибке поверх карты
+                    mapApiErrorOverlay.classList.remove('hidden');
+                }
+            }, 3000); // Ждем 3 секунды, чтобы дать API время на загрузку.
+        });
+
+        // --- ЛОГИКА АУТЕНТИФИКАЦИИ ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                authScreen.classList.add('hidden');
+                appScreen.classList.remove('hidden');
+                appScreen.classList.add('fade-in');
+                userEmailDisplay.textContent = user.email;
+                
+                // Запускаем все, что требует авторизации
+                centerMapOnUser();
+                loadHistory();
+
+            } else {
+                currentUser = null;
+                authScreen.classList.remove('hidden');
+                appScreen.classList.add('hidden');
+            }
+        });
+        
+        (async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                }
+            } catch (error) {
+                console.error("Ошибка входа с токеном:", error);
+                authError.textContent = "Не удалось выполнить автоматический вход.";
+            }
+        })();
+
+        showRegister.addEventListener('click', (e) => { e.preventDefault(); loginContainer.classList.add('hidden'); registerContainer.classList.remove('hidden'); authError.textContent = ''; });
+        showLogin.addEventListener('click', (e) => { e.preventDefault(); registerContainer.classList.add('hidden'); loginContainer.classList.remove('hidden'); authError.textContent = ''; });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            authError.textContent = '';
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = 'Ошибка регистрации: ' + error.message;
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            authError.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = 'Ошибка входа: ' + error.message;
+            }
+        });
+
+        logoutButton.addEventListener('click', async () => { await signOut(auth); });
+
+        // --- ЛОГИКА ПРИЛОЖЕНИЯ ---
+
+        function updateSubtypeOptions() {
+            const selectedType = activityTypeSelect.value;
+            const subtypes = activitySubtypes[selectedType];
+            activitySubtypeSelect.innerHTML = '';
+            subtypes.forEach(subtype => {
+                const option = document.createElement('option');
+                option.value = subtype.value;
+                option.textContent = subtype.text;
+                activitySubtypeSelect.appendChild(option);
+            });
+        }
+        activityTypeSelect.addEventListener('change', updateSubtypeOptions);
+        updateSubtypeOptions();
+
+        function centerMapOnUser() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
+                    if (map) {
+                        map.setCenter(userPos);
+                        if (!userMarker) {
+                            userMarker = new google.maps.Marker({
+                                position: userPos,
+                                map: map,
+                                title: 'Вы здесь',
+                                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#4285F4', fillOpacity: 1, strokeColor: 'white', strokeWeight: 2 }
+                            });
+                        } else {
+                            userMarker.setPosition(userPos);
+                        }
+                    }
+                }, () => {
+                    showCustomModal('Ошибка геолокации', 'Не удалось получить ваше местоположение. Пожалуйста, разрешите доступ к GPS в настройках браузера.');
+                });
+            }
+        }
+
+        startTrackingBtn.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                showCustomModal('Ошибка', 'Геолокация не поддерживается вашим браузером.');
+                return;
+            }
+            isTracking = true;
+            resetTrackingState();
+            startTrackingBtn.classList.add('hidden');
+            stopTrackingBtn.classList.remove('hidden');
+            statsDisplay.classList.remove('hidden');
+            statsDisplay.classList.add('grid', 'fade-in');
+            startTime = new Date();
+            timerInterval = setInterval(updateDuration, 1000);
+            watchId = navigator.geolocation.watchPosition(handlePositionUpdate, handlePositionError, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        });
+
+        stopTrackingBtn.addEventListener('click', () => {
+            if (!isTracking) return;
+            isTracking = false;
+            navigator.geolocation.clearWatch(watchId);
+            clearInterval(timerInterval);
+            startTrackingBtn.classList.remove('hidden');
+            stopTrackingBtn.classList.add('hidden');
+            if (currentPath.length > 1) {
+                saveActivity();
+            }
+        });
+
+        function resetTrackingState() {
+            currentPath = [];
+            totalDistance = 0;
+            if (routePolyline) {
+                routePolyline.setMap(null);
+            }
+            if(map) {
+                routePolyline = new google.maps.Polyline({ path: [], geodesic: true, strokeColor: '#FF5722', strokeOpacity: 1.0, strokeWeight: 4 });
+                routePolyline.setMap(map);
+            }
+            statDuration.textContent = '00:00:00';
+            statDistance.textContent = '0.00 км';
+            statCurrentSpeed.textContent = '0.0 км/ч';
+            statAvgSpeed.textContent = '0.0 км/ч';
+        }
+
+        function handlePositionUpdate(position) {
+            const newPoint = { lat: position.coords.latitude, lng: position.coords.longitude };
+            if (userMarker) userMarker.setPosition(newPoint);
+            if (map) map.panTo(newPoint);
+            currentPath.push(newPoint);
+            if (routePolyline) routePolyline.setPath(currentPath);
+            if (currentPath.length > 1) {
+                const lastPoint = currentPath[currentPath.length - 2];
+                totalDistance += google.maps.geometry.spherical.computeDistanceBetween( new google.maps.LatLng(lastPoint), new google.maps.LatLng(newPoint) );
+            }
+            const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(1) : '0.0';
+            statCurrentSpeed.textContent = `${speed} км/ч`;
+            statDistance.textContent = `${(totalDistance / 1000).toFixed(2)} км`;
+            updateAvgSpeed();
+        }
+
+        function handlePositionError(error) {
+            showCustomModal('Ошибка GPS', `Произошла ошибка: ${error.message}`);
+            stopTrackingBtn.click();
+        }
+
+        function updateDuration() {
+            const diff = new Date() - startTime;
+            const hours = String(Math.floor(diff / 3600000)).padStart(2, '0');
+            const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+            const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+            statDuration.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        function updateAvgSpeed() {
+            const durationInHours = (new Date() - startTime) / 3600000;
+            if (durationInHours > 0 && totalDistance > 0) {
+                const avgSpeed = (totalDistance / 1000) / durationInHours;
+                statAvgSpeed.textContent = `${avgSpeed.toFixed(1)} км/ч`;
+            }
+        }
+
+        async function saveActivity() {
+            if (!currentUser) return;
+            const duration = new Date() - startTime;
+            const durationInHours = duration / 3600000;
+            const avgSpeed = durationInHours > 0 ? (totalDistance / 1000) / durationInHours : 0;
+            const activityData = {
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                type: activityTypeSelect.options[activityTypeSelect.selectedIndex].text,
+                subtype: activitySubtypeSelect.options[activitySubtypeSelect.selectedIndex].text,
+                distance: totalDistance,
+                duration: duration,
+                avgSpeed: avgSpeed,
+                path: JSON.stringify(currentPath),
+                createdAt: new Date()
+            };
+            try {
+                const collectionPath = `artifacts/${appId}/users/${currentUser.uid}/activities`;
+                const docRef = await addDoc(collection(db, collectionPath), activityData);
+                console.log("Активность сохранена с ID: ", docRef.id);
+                showShareModal(docRef.id);
+            } catch (e) {
+                console.error("Ошибка сохранения активности: ", e);
+                showCustomModal('Ошибка', 'Не удалось сохранить вашу активность.');
+            }
+        }
+
+        function loadHistory() {
+            if (!currentUser) return;
+            const collectionPath = `artifacts/${appId}/users/${currentUser.uid}/activities`;
+            const q = query(collection(db, collectionPath), firestoreOrderBy("createdAt", "desc"), limit(6));
+            onSnapshot(q, (snapshot) => {
+                historyList.innerHTML = '';
+                if (snapshot.empty) {
+                    historyList.innerHTML = '<p class="text-gray-500 text-sm">У вас еще нет сохраненных активностей.</p>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const activity = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition';
+                    card.dataset.path = activity.path;
+                    const date = activity.createdAt.toDate().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+                    const distanceKm = (activity.distance / 1000).toFixed(2);
+                    const durationMs = activity.duration;
+                    const hours = String(Math.floor(durationMs / 3600000)).padStart(2, '0');
+                    const minutes = String(Math.floor((durationMs % 3600000) / 60000)).padStart(2, '0');
+                    card.innerHTML = `<div class="flex justify-between items-center"><div><p class="font-semibold text-gray-800">${activity.type} - ${activity.subtype}</p><p class="text-sm text-gray-500">${date}</p></div><div class="text-right"><p class="font-bold text-teal-600">${distanceKm} км</p><p class="text-sm text-gray-500">${hours}:${minutes}</p></div></div>`;
+                    card.addEventListener('click', () => {
+                        const path = JSON.parse(card.dataset.path);
+                        if (routePolyline) routePolyline.setMap(null);
+                        if(map) {
+                            routePolyline = new google.maps.Polyline({ path: path, strokeColor: '#FF5722', strokeOpacity: 0.8, strokeWeight: 4, map: map });
+                            const bounds = new google.maps.LatLngBounds();
+                            path.forEach(p => bounds.extend(p));
+                            map.fitBounds(bounds);
+                        }
+                    });
+                    historyList.appendChild(card);
+                });
+            });
+        }
+        
+        function showShareModal(activityId) {
+            const link = `${window.location.origin}${window.location.pathname}?activity=${activityId}`;
+            shareLinkInput.value = `Присоединяйся ко мне в SprintTrack! Мой маршрут: ${link}`;
+            shareModal.classList.remove('hidden');
+        }
+        
+        copyLinkBtn.addEventListener('click', () => {
+            shareLinkInput.select();
+            document.execCommand('copy');
+            copyLinkBtn.textContent = 'Скопировано!';
+            setTimeout(() => { copyLinkBtn.textContent = 'Копировать'; }, 2000);
+        });
+
+    </script>
+</body>
+</html>
