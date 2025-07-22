@@ -960,9 +960,10 @@
         // --- Загрузка скрипта Google Maps ---
         // Эта функция будет вызвана после готовности DOM для внедрения скрипта Google Maps
         function loadGoogleMapsScript() {
-            const googleMapsApiKey = "AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0"; // !!! ВСТАВЬТЕ СЮДА ВАШ РЕАЛЬНЫЙ КЛЮЧ API !!!
-            if (googleMapsApiKey === "AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0" || !googleMapsApiKey) {
-                showModal("Пожалуйста, замените 'AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0' на ваш реальный ключ Google Maps API в коде для работы карты.");
+            const googleMapsApiKey = "AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0"; // Ваш реальный ключ API
+            // Удалена проверка на равенство ключа API с жестко закодированной строкой
+            if (!googleMapsApiKey) {
+                showModal("Ошибка: Отсутствует ключ Google Maps API. Пожалуйста, убедитесь, что ключ API указан в коде.");
                 document.getElementById('map-status').textContent = "Ошибка: Отсутствует ключ Google Maps API.";
                 return;
             }
