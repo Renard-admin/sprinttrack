@@ -10,7 +10,6 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Стили для плавного появления элементов */
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
@@ -18,14 +17,7 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        /* Кастомные стили для лучшего вида */
-        .glassmorphism {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-         #map {
+        #map {
             height: 100%;
             width: 100%;
         }
@@ -42,7 +34,7 @@
         .map-container {
             flex-grow: 1;
             height: 100%;
-            position: relative; /* Нужно для позиционирования оверлея */
+            position: relative;
         }
         .sidebar {
             width: 380px;
@@ -57,7 +49,7 @@
             }
             .sidebar {
                 width: 100%;
-                height: 50vh; /* Половина экрана на мобильных */
+                height: 50vh;
                 flex-shrink: 1;
             }
             .map-container {
@@ -68,31 +60,18 @@
 </head>
 <body class="bg-gray-100">
 
-    <!-- Экран входа и регистрации -->
+    <!-- Экран входа -->
     <div id="auth-screen" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center fade-in">
             <h1 class="text-3xl font-bold text-teal-600 mb-2">SprintTrack</h1>
-            <p class="text-gray-500 mb-6">Ваш трекер активности</p>
+            <p class="text-gray-500 mb-6">Вход для участников</p>
             
-            <div id="auth-container">
-                <!-- Форма входа -->
-                <form id="login-form" class="space-y-4">
-                    <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
-                    <input type="password" id="login-password" placeholder="Пароль" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
-                    <button type="submit" class="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition duration-300">Войти</button>
-                </form>
-                <p class="mt-4 text-sm">Нет аккаунта? <a href="#" id="show-register" class="text-teal-500 hover:underline">Зарегистрироваться</a></p>
-            </div>
-
-            <div id="register-container" class="hidden">
-                <!-- Форма регистрации -->
-                <form id="register-form" class="space-y-4">
-                    <input type="email" id="register-email" placeholder="Email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
-                    <input type="password" id="register-password" placeholder="Пароль (мин. 6 символов)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
-                    <button type="submit" class="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition duration-300">Создать аккаунт</button>
-                </form>
-                <p class="mt-4 text-sm">Уже есть аккаунт? <a href="#" id="show-login" class="text-teal-500 hover:underline">Войти</a></p>
-            </div>
+            <!-- Форма входа -->
+            <form id="login-form" class="space-y-4">
+                <input type="text" id="login-name" placeholder="Логин" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                <input type="password" id="login-password" placeholder="Пароль" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                <button type="submit" class="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition duration-300">Войти</button>
+            </form>
             <p id="auth-error" class="text-red-500 mt-4 text-sm h-4"></p>
         </div>
     </div>
@@ -103,7 +82,7 @@
             <header class="flex items-center justify-between pb-4 border-b">
                 <div>
                     <h1 class="text-2xl font-bold text-teal-600">SprintTrack</h1>
-                    <p id="user-email" class="text-sm text-gray-500"></p>
+                    <p id="user-name-display" class="text-sm text-gray-500"></p>
                 </div>
                 <button id="logout-button" class="text-gray-500 hover:text-red-500 transition">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
@@ -163,7 +142,6 @@
         </div>
         <div class="map-container">
             <div id="map"></div>
-            <!-- Оверлей для ошибки API ключа -->
             <div id="map-api-error-overlay" class="hidden absolute inset-0 bg-red-100 bg-opacity-95 flex items-center justify-center z-10 p-4 text-center">
                 <div>
                     <h2 class="text-2xl font-bold text-red-800 mb-4">Ошибка загрузки карты</h2>
@@ -182,7 +160,7 @@
         </div>
     </div>
     
-    <!-- Модальное окно для шаринга -->
+    <!-- Модальные окна -->
     <div id="share-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center fade-in">
             <h2 class="text-2xl font-bold mb-4">Поделиться маршрутом</h2>
@@ -194,8 +172,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Кастомное модальное окно для уведомлений -->
     <div id="custom-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center z-[60]">
         <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center fade-in">
             <h3 id="modal-title" class="text-xl font-bold mb-4"></h3>
@@ -204,43 +180,24 @@
         </div>
     </div>
 
-    <!-- 
-        !!! ВАЖНО !!!
-        Замените "YOUR_GOOGLE_MAPS_API_KEY" на ваш настоящий ключ Google Maps API.
-        Без этого карта не будет работать.
-    -->
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap"></script>
     
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { 
-            getAuth, 
-            createUserWithEmailAndPassword, 
-            signInWithEmailAndPassword, 
-            onAuthStateChanged, 
-            signOut,
-            signInAnonymously,
-            signInWithCustomToken
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
             getFirestore,
             collection,
             addDoc,
             query,
-            where,
-            getDocs,
             onSnapshot,
             limit,
-            orderBy as firestoreOrderBy,
-            doc,
-            setDoc
+            orderBy as firestoreOrderBy
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ И КОНФИГУРАЦИЯ ---
+        // --- КОНФИГУРАЦИЯ И ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ---
 
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            // Вставьте вашу конфигурацию Firebase здесь, если __firebase_config не определен
             apiKey: "YOUR_API_KEY",
             authDomain: "YOUR_AUTH_DOMAIN",
             projectId: "YOUR_PROJECT_ID",
@@ -250,42 +207,37 @@
         };
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'sprinttrack-default';
 
+        // Список разрешенных пользователей
+        const allowedUsers = [
+            { login: 'Renard', pass: '121212' }
+            // Сюда можно добавлять новых пользователей
+        ];
+
         // Инициализация Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getFirestore(app);
 
         // DOM элементы
         const authScreen = document.getElementById('auth-screen');
         const appScreen = document.getElementById('app-screen');
         const loginForm = document.getElementById('login-form');
-        const registerForm = document.getElementById('register-form');
         const authError = document.getElementById('auth-error');
-        const showRegister = document.getElementById('show-register');
-        const showLogin = document.getElementById('show-login');
-        const registerContainer = document.getElementById('register-container');
-        const loginContainer = document.getElementById('auth-container');
-        
-        const userEmailDisplay = document.getElementById('user-email');
+        const userNameDisplay = document.getElementById('user-name-display');
         const logoutButton = document.getElementById('logout-button');
-
         const activityTypeSelect = document.getElementById('activity-type');
         const activitySubtypeSelect = document.getElementById('activity-subtype');
         const startTrackingBtn = document.getElementById('start-tracking');
         const stopTrackingBtn = document.getElementById('stop-tracking');
         const statsDisplay = document.getElementById('stats-display');
         const historyList = document.getElementById('history-list');
-
         const statDuration = document.getElementById('stat-duration');
         const statDistance = document.getElementById('stat-distance');
         const statCurrentSpeed = document.getElementById('stat-current-speed');
         const statAvgSpeed = document.getElementById('stat-avg-speed');
-        
         const shareModal = document.getElementById('share-modal');
         const shareLinkInput = document.getElementById('share-link');
         const copyLinkBtn = document.getElementById('copy-link-btn');
         const closeShareModalBtn = document.getElementById('close-share-modal-btn');
-
         const customModal = document.getElementById('custom-modal');
         const modalTitle = document.getElementById('modal-title');
         const modalMessage = document.getElementById('modal-message');
@@ -305,45 +257,56 @@
         let currentUser = null;
 
         const activitySubtypes = {
-            walking: [
-                { value: 'walk', text: 'Ходьба' },
-                { value: 'run', text: 'Бег' },
-                { value: 'sprint', text: 'Спринт' },
-                { value: 'hiking', text: 'Хайкинг' }
-            ],
-            cycling: [
-                { value: 'balanced', text: 'Сбалансированный' },
-                { value: 'shortest', text: 'Самый короткий' },
-                { value: 'bike_lanes', text: 'Велосипедные дорожки' },
-                { value: 'popular', text: 'Популярные' },
-                { value: 'ebike', text: 'E-bike' },
-                { value: 'smooth', text: 'Плавная езда' },
-                { value: 'road', text: 'Шоссейный велосипед' },
-                { value: 'mtb', text: 'Горный велосипед' }
-            ]
+            walking: [ { value: 'walk', text: 'Ходьба' }, { value: 'run', text: 'Бег' }, { value: 'sprint', text: 'Спринт' }, { value: 'hiking', text: 'Хайкинг' } ],
+            cycling: [ { value: 'balanced', text: 'Сбалансированный' }, { value: 'shortest', text: 'Самый короткий' }, { value: 'bike_lanes', text: 'Велосипедные дорожки' }, { value: 'popular', text: 'Популярные' }, { value: 'ebike', text: 'E-bike' }, { value: 'smooth', text: 'Плавная езда' }, { value: 'road', text: 'Шоссейный велосипед' }, { value: 'mtb', text: 'Горный велосипед' } ]
         };
+
+        // --- ЛОГИКА АУТЕНТИФИКАЦИИ (РУЧНАЯ) ---
+
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const login = document.getElementById('login-name').value;
+            const pass = document.getElementById('login-password').value;
+            authError.textContent = '';
+
+            const foundUser = allowedUsers.find(user => user.login === login && user.pass === pass);
+
+            if (foundUser) {
+                currentUser = foundUser;
+                showApp();
+            } else {
+                authError.textContent = 'Неверный логин или пароль.';
+            }
+        });
+
+        logoutButton.addEventListener('click', () => {
+            currentUser = null;
+            authScreen.classList.remove('hidden');
+            appScreen.classList.add('hidden');
+        });
+
+        function showApp() {
+            authScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+            appScreen.classList.add('fade-in');
+            userNameDisplay.textContent = currentUser.login;
+            centerMapOnUser();
+            loadHistory();
+        }
 
         // --- ЛОГИКА МОДАЛЬНЫХ ОКОН ---
         function showCustomModal(title, message) {
             modalTitle.textContent = title;
-            modalMessage.innerHTML = message; // Используем innerHTML для возможности вставки тегов
+            modalMessage.innerHTML = message;
             customModal.classList.remove('hidden');
         }
-
-        modalCloseBtn.addEventListener('click', () => {
-            customModal.classList.add('hidden');
-        });
-        
-        closeShareModalBtn.addEventListener('click', () => {
-            shareModal.classList.add('hidden');
-        });
+        modalCloseBtn.addEventListener('click', () => customModal.classList.add('hidden'));
+        closeShareModalBtn.addEventListener('click', () => shareModal.classList.add('hidden'));
 
         // --- ИНИЦИАЛИЗАЦИЯ КАРТЫ И ПРОВЕРКА API ---
         window.initMap = () => {
-            // Эта функция вызывается скриптом Google Maps ПОСЛЕ успешной загрузки.
-            // Если она не вызвана, значит, произошла ошибка (например, неверный ключ).
             console.log("Google Maps API loaded successfully.");
-            const initialCoords = { lat: 51.169392, lng: 71.449074 }; // Астана по умолчанию
+            const initialCoords = { lat: 51.169392, lng: 71.449074 }; // Астана
             map = new google.maps.Map(document.getElementById('map'), {
                 center: initialCoords,
                 zoom: 15,
@@ -353,85 +316,21 @@
             });
         };
 
-        // Проверяем, загрузился ли API Google Maps после загрузки страницы
         window.addEventListener('load', () => {
             setTimeout(() => {
-                // Объект `google` определяется только в том случае, если скрипт API загружен правильно.
                 if (typeof google === 'undefined' || typeof google.maps === 'undefined') {
-                    console.error("Google Maps API failed to load. Likely an InvalidKeyMapError.");
-                    // Показываем специальное сообщение об ошибке поверх карты
+                    console.error("Google Maps API failed to load.");
                     mapApiErrorOverlay.classList.remove('hidden');
                 }
-            }, 3000); // Ждем 3 секунды, чтобы дать API время на загрузку.
+            }, 3000);
         });
-
-        // --- ЛОГИКА АУТЕНТИФИКАЦИИ ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                authScreen.classList.add('hidden');
-                appScreen.classList.remove('hidden');
-                appScreen.classList.add('fade-in');
-                userEmailDisplay.textContent = user.email;
-                
-                // Запускаем все, что требует авторизации
-                centerMapOnUser();
-                loadHistory();
-
-            } else {
-                currentUser = null;
-                authScreen.classList.remove('hidden');
-                appScreen.classList.add('hidden');
-            }
-        });
-        
-        (async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                }
-            } catch (error) {
-                console.error("Ошибка входа с токеном:", error);
-                authError.textContent = "Не удалось выполнить автоматический вход.";
-            }
-        })();
-
-        showRegister.addEventListener('click', (e) => { e.preventDefault(); loginContainer.classList.add('hidden'); registerContainer.classList.remove('hidden'); authError.textContent = ''; });
-        showLogin.addEventListener('click', (e) => { e.preventDefault(); registerContainer.classList.add('hidden'); loginContainer.classList.remove('hidden'); authError.textContent = ''; });
-
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            authError.textContent = '';
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                authError.textContent = 'Ошибка регистрации: ' + error.message;
-            }
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            authError.textContent = '';
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                authError.textContent = 'Ошибка входа: ' + error.message;
-            }
-        });
-
-        logoutButton.addEventListener('click', async () => { await signOut(auth); });
 
         // --- ЛОГИКА ПРИЛОЖЕНИЯ ---
 
         function updateSubtypeOptions() {
             const selectedType = activityTypeSelect.value;
-            const subtypes = activitySubtypes[selectedType];
             activitySubtypeSelect.innerHTML = '';
-            subtypes.forEach(subtype => {
+            activitySubtypes[selectedType].forEach(subtype => {
                 const option = document.createElement('option');
                 option.value = subtype.value;
                 option.textContent = subtype.text;
@@ -458,9 +357,7 @@
                             userMarker.setPosition(userPos);
                         }
                     }
-                }, () => {
-                    showCustomModal('Ошибка геолокации', 'Не удалось получить ваше местоположение. Пожалуйста, разрешите доступ к GPS в настройках браузера.');
-                });
+                }, () => showCustomModal('Ошибка геолокации', 'Не удалось получить ваше местоположение. Пожалуйста, разрешите доступ к GPS.'));
             }
         }
 
@@ -495,9 +392,7 @@
         function resetTrackingState() {
             currentPath = [];
             totalDistance = 0;
-            if (routePolyline) {
-                routePolyline.setMap(null);
-            }
+            if (routePolyline) routePolyline.setMap(null);
             if(map) {
                 routePolyline = new google.maps.Polyline({ path: [], geodesic: true, strokeColor: '#FF5722', strokeOpacity: 1.0, strokeWeight: 4 });
                 routePolyline.setMap(map);
@@ -551,8 +446,7 @@
             const durationInHours = duration / 3600000;
             const avgSpeed = durationInHours > 0 ? (totalDistance / 1000) / durationInHours : 0;
             const activityData = {
-                userId: currentUser.uid,
-                userEmail: currentUser.email,
+                userName: currentUser.login,
                 type: activityTypeSelect.options[activityTypeSelect.selectedIndex].text,
                 subtype: activitySubtypeSelect.options[activitySubtypeSelect.selectedIndex].text,
                 distance: totalDistance,
@@ -562,7 +456,8 @@
                 createdAt: new Date()
             };
             try {
-                const collectionPath = `artifacts/${appId}/users/${currentUser.uid}/activities`;
+                // Данные хранятся в папке, названной в честь логина пользователя
+                const collectionPath = `artifacts/${appId}/users/${currentUser.login}/activities`;
                 const docRef = await addDoc(collection(db, collectionPath), activityData);
                 console.log("Активность сохранена с ID: ", docRef.id);
                 showShareModal(docRef.id);
@@ -574,7 +469,7 @@
 
         function loadHistory() {
             if (!currentUser) return;
-            const collectionPath = `artifacts/${appId}/users/${currentUser.uid}/activities`;
+            const collectionPath = `artifacts/${appId}/users/${currentUser.login}/activities`;
             const q = query(collection(db, collectionPath), firestoreOrderBy("createdAt", "desc"), limit(6));
             onSnapshot(q, (snapshot) => {
                 historyList.innerHTML = '';
