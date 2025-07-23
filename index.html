@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SprintTrack - Отслеживайте свои маршруты</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comfortaa:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0&libraries=places,geometry"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0&libraries=places,geometry&callback=initMap" async defer></script>
     <style>
         :root {
             --primary: #4CAF50;
@@ -43,8 +44,43 @@
 
         .app-container {
             display: flex;
+            flex-direction: column;
             height: 100vh;
             transition: all 0.3s ease;
+        }
+
+        /* Шапка */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-family: 'Comfortaa', cursive;
+            font-size: 1.5rem;
+            margin-left: 10px;
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            font-size: 1.8rem;
+        }
+
+        .menu-toggle {
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
         }
 
         /* Стили для боковой панели */
@@ -56,27 +92,13 @@
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            z-index: 100;
+            z-index: 90;
             overflow-y: auto;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .logo h1 {
-            font-family: 'Comfortaa', cursive;
-            font-size: 24px;
-            margin-left: 10px;
-            font-weight: 700;
-        }
-
-        .logo-icon {
-            font-size: 28px;
+            transition: transform 0.3s ease;
+            position: fixed;
+            height: calc(100vh - 60px);
+            top: 60px;
+            left: 0;
         }
 
         .user-profile {
@@ -198,6 +220,8 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            margin-left: 320px;
+            height: calc(100vh - 60px);
         }
 
         #map {
@@ -217,7 +241,8 @@
         }
 
         .search-box {
-            width: 400px;
+            width: 100%;
+            max-width: 400px;
             background-color: var(--card);
             padding: 12px 20px;
             border-radius: 30px;
@@ -379,10 +404,11 @@
         }
 
         .login-box {
-            width: 400px;
+            width: 90%;
+            max-width: 400px;
             background-color: white;
             border-radius: 20px;
-            padding: 40px;
+            padding: 30px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             text-align: center;
         }
@@ -395,13 +421,13 @@
 
         .login-logo h1 {
             font-family: 'Comfortaa', cursive;
-            font-size: 32px;
+            font-size: 28px;
             color: var(--primary);
             margin-left: 10px;
         }
 
         .login-logo .logo-icon {
-            font-size: 36px;
+            font-size: 32px;
             color: var(--accent);
         }
 
@@ -479,6 +505,130 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        .map-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            text-align: center;
+            background-color: #f8f9fa;
+        }
+
+        .map-error i {
+            font-size: 48px;
+            color: var(--error);
+            margin-bottom: 20px;
+        }
+
+        .map-error h2 {
+            margin-bottom: 15px;
+            color: var(--text);
+        }
+
+        .map-error p {
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        /* Адаптивные стили */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 280px;
+            }
+            
+            .stats-panel {
+                width: 240px;
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .map-overlay {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .search-box {
+                max-width: 100%;
+            }
+            
+            .action-buttons {
+                position: absolute;
+                top: 70px;
+                right: 20px;
+            }
+            
+            .tracking-controls {
+                bottom: 100px;
+                flex-wrap: wrap;
+                justify-content: center;
+                max-width: 90%;
+            }
+            
+            .stats-panel {
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                width: auto;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .app-header {
+                padding: 12px 15px;
+            }
+            
+            .logo h1 {
+                font-size: 1.3rem;
+            }
+            
+            .tracking-controls {
+                gap: 10px;
+                padding: 12px 15px;
+            }
+            
+            .control-button {
+                min-width: 60px;
+            }
+            
+            .control-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .control-label {
+                font-size: 12px;
+            }
+            
+            .transport-options {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -486,7 +636,7 @@
     <div class="login-container" id="loginContainer">
         <div class="login-box slide-in">
             <div class="login-logo">
-                <div class="logo-icon">🚴</div>
+                <div class="logo-icon"><i class="fas fa-bicycle"></i></div>
                 <h1>SprintTrack</h1>
             </div>
             <form class="login-form" id="loginForm">
@@ -508,13 +658,19 @@
 
     <!-- Основной интерфейс приложения -->
     <div class="app-container hidden" id="appContainer">
-        <!-- Боковая панель -->
-        <div class="sidebar">
+        <!-- Шапка -->
+        <div class="app-header">
             <div class="logo">
-                <div class="logo-icon">🚴</div>
+                <div class="logo-icon"><i class="fas fa-bicycle"></i></div>
                 <h1>SprintTrack</h1>
             </div>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
 
+        <!-- Боковая панель -->
+        <div class="sidebar" id="sidebar">
             <div class="user-profile">
                 <div class="user-avatar" id="userAvatar">R</div>
                 <div class="user-info">
@@ -525,52 +681,52 @@
 
             <div class="nav-section">
                 <div class="section-title">
-                    <i>📊</i> Статистика
+                    <i class="fas fa-chart-line"></i> Статистика
                 </div>
                 <div class="nav-item active">
-                    <i>📍</i> Текущий маршрут
+                    <i class="fas fa-route"></i> Текущий маршрут
                 </div>
                 <div class="nav-item">
-                    <i>🏆</i> Мои достижения
+                    <i class="fas fa-trophy"></i> Мои достижения
                 </div>
                 <div class="nav-item">
-                    <i>📈</i> Прогресс
+                    <i class="fas fa-chart-bar"></i> Прогресс
                 </div>
             </div>
 
             <div class="nav-section">
                 <div class="section-title">
-                    <i>👥</i> Сообщество
+                    <i class="fas fa-users"></i> Сообщество
                 </div>
                 <div class="nav-item">
-                    <i>🏅</i> Рейтинг
+                    <i class="fas fa-medal"></i> Рейтинг
                 </div>
                 <div class="nav-item">
-                    <i>👫</i> Друзья
+                    <i class="fas fa-user-friends"></i> Друзья
                 </div>
                 <div class="nav-item">
-                    <i>🗣️</i> Обсуждения
+                    <i class="fas fa-comments"></i> Обсуждения
                 </div>
             </div>
 
             <div class="nav-section">
                 <div class="section-title">
-                    <i>⚙️</i> Настройки
+                    <i class="fas fa-cog"></i> Настройки
                 </div>
                 <div class="nav-item">
-                    <i>🔒</i> Безопасность
+                    <i class="fas fa-lock"></i> Безопасность
                 </div>
                 <div class="nav-item">
-                    <i>🔔</i> Уведомления
+                    <i class="fas fa-bell"></i> Уведомления
                 </div>
                 <div class="nav-item">
-                    <i>🌐</i> Язык
+                    <i class="fas fa-globe"></i> Язык
                 </div>
             </div>
 
             <div class="transport-type">
                 <div class="transport-title">
-                    <i>🚶</i> Пешком
+                    <i class="fas fa-walking"></i> Пешком
                 </div>
                 <div class="transport-options">
                     <div class="transport-option">Спринт</div>
@@ -582,7 +738,7 @@
 
             <div class="transport-type">
                 <div class="transport-title">
-                    <i>🚴</i> Велосипед
+                    <i class="fas fa-bicycle"></i> Велосипед
                 </div>
                 <div class="transport-options">
                     <div class="transport-option active">Сбалансированный</div>
@@ -599,22 +755,29 @@
 
         <!-- Основное содержимое -->
         <div class="main-content">
-            <div id="map"></div>
+            <div id="map">
+                <div class="map-error" id="mapError">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h2>Не удалось загрузить карту</h2>
+                    <p>Проверьте подключение к интернету и обновите страницу. Если проблема сохраняется, убедитесь, что ключ Google Maps API активен.</p>
+                    <p>Вы можете продолжить использовать приложение без карты.</p>
+                </div>
+            </div>
             
             <div class="map-overlay">
                 <div class="search-box">
                     <input type="text" placeholder="Поиск мест или адресов...">
-                    <i>🔍</i>
+                    <i class="fas fa-search"></i>
                 </div>
                 <div class="action-buttons">
                     <div class="action-button">
-                        <i>📍</i>
+                        <i class="fas fa-location-arrow"></i>
                     </div>
                     <div class="action-button">
-                        <i>🗺️</i>
+                        <i class="fas fa-map-marked-alt"></i>
                     </div>
                     <div class="action-button">
-                        <i>⭐</i>
+                        <i class="fas fa-star"></i>
                     </div>
                 </div>
             </div>
@@ -622,25 +785,25 @@
             <div class="tracking-controls">
                 <div class="control-button">
                     <div class="control-icon">
-                        <i>⏪</i>
+                        <i class="fas fa-step-backward"></i>
                     </div>
                     <div class="control-label">Назад</div>
                 </div>
                 <div class="control-button start">
                     <div class="control-icon pulse">
-                        <i>▶️</i>
+                        <i class="fas fa-play"></i>
                     </div>
                     <div class="control-label">Старт</div>
                 </div>
                 <div class="control-button stop">
                     <div class="control-icon">
-                        <i>⏹️</i>
+                        <i class="fas fa-stop"></i>
                     </div>
                     <div class="control-label">Стоп</div>
                 </div>
                 <div class="control-button">
                     <div class="control-icon">
-                        <i>⏩</i>
+                        <i class="fas fa-step-forward"></i>
                     </div>
                     <div class="control-label">Вперед</div>
                 </div>
@@ -650,7 +813,7 @@
                 <div class="stats-header">
                     <div class="stats-title">Статистика</div>
                     <div class="action-button">
-                        <i>📊</i>
+                        <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
                 <div class="stats-content">
@@ -709,6 +872,7 @@
         let distance = 0;
         let lastPosition = null;
         let currentUser = null;
+        let mapError = false;
 
         // Инициализация приложения
         document.addEventListener('DOMContentLoaded', function() {
@@ -716,7 +880,11 @@
             const loginForm = document.getElementById('loginForm');
             loginForm.addEventListener('submit', handleLogin);
             
-            // Инициализация карты после входа
+            // Переключение меню на мобильных устройствах
+            document.getElementById('menuToggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+            });
+            
             // Анонимная аутентификация для Firebase
             auth.signInAnonymously()
                 .then(() => {
@@ -747,8 +915,10 @@
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('appContainer').classList.remove('hidden');
                 
-                // Инициализация карты
-                initMap();
+                // Попытка инициализации карты
+                if (!map && !mapError) {
+                    initMap();
+                }
             } else {
                 alert("Неверный логин или пароль!");
             }
@@ -756,76 +926,83 @@
 
         // Инициализация карты
         function initMap() {
-            const mapOptions = {
-                center: { lat: 55.7558, lng: 37.6173 }, // Москва
-                zoom: 13,
-                mapTypeId: 'satellite',
-                styles: [
-                    {
-                        "featureType": "poi",
-                        "stylers": [{"visibility": "off"}]
+            try {
+                const mapOptions = {
+                    center: { lat: 55.7558, lng: 37.6173 }, // Москва
+                    zoom: 13,
+                    mapTypeId: 'satellite',
+                    styles: [
+                        {
+                            "featureType": "poi",
+                            "stylers": [{"visibility": "off"}]
+                        },
+                        {
+                            "featureType": "transit",
+                            "stylers": [{"visibility": "off"}]
+                        }
+                    ]
+                };
+                
+                map = new google.maps.Map(document.getElementById('map'), mapOptions);
+                document.getElementById('mapError').style.display = 'none';
+                
+                // Добавление маркера текущего положения
+                currentPositionMarker = new google.maps.Marker({
+                    position: mapOptions.center,
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: "#4285F4",
+                        fillOpacity: 1,
+                        strokeColor: "#FFFFFF",
+                        strokeWeight: 2
                     },
-                    {
-                        "featureType": "transit",
-                        "stylers": [{"visibility": "off"}]
-                    }
-                ]
-            };
-            
-            map = new google.maps.Map(document.getElementById('map'), mapOptions);
-            
-            // Добавление маркера текущего положения
-            currentPositionMarker = new google.maps.Marker({
-                position: mapOptions.center,
-                map: map,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 10,
-                    fillColor: "#4285F4",
-                    fillOpacity: 1,
-                    strokeColor: "#FFFFFF",
-                    strokeWeight: 2
-                },
-                title: "Ваше местоположение"
-            });
-            
-            // Добавление линии маршрута
-            routePath = new google.maps.Polyline({
-                path: [],
-                geodesic: true,
-                strokeColor: "#FF5722",
-                strokeOpacity: 1.0,
-                strokeWeight: 4
-            });
-            routePath.setMap(map);
-            
-            // Запрос геолокации
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(position => {
-                    const pos = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    
-                    currentPositionMarker.setPosition(pos);
-                    map.setCenter(pos);
-                }, () => {
-                    handleLocationError(true);
+                    title: "Ваше местоположение"
                 });
-            } else {
-                handleLocationError(false);
+                
+                // Добавление линии маршрута
+                routePath = new google.maps.Polyline({
+                    path: [],
+                    geodesic: true,
+                    strokeColor: "#FF5722",
+                    strokeOpacity: 1.0,
+                    strokeWeight: 4
+                });
+                routePath.setMap(map);
+                
+                // Запрос геолокации
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
+                        const pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        currentPositionMarker.setPosition(pos);
+                        map.setCenter(pos);
+                    }, () => {
+                        handleLocationError(true);
+                    });
+                } else {
+                    handleLocationError(false);
+                }
+                
+                // Обработчики кнопок
+                document.querySelector('.control-button.start').addEventListener('click', startTracking);
+                document.querySelector('.control-button.stop').addEventListener('click', stopTracking);
+            } catch (error) {
+                console.error("Ошибка инициализации карты:", error);
+                document.getElementById('mapError').style.display = 'flex';
+                mapError = true;
             }
-            
-            // Обработчики кнопок
-            document.querySelector('.control-button.start').addEventListener('click', startTracking);
-            document.querySelector('.control-button.stop').addEventListener('click', stopTracking);
         }
 
         // Обработка ошибок геолокации
         function handleLocationError(browserHasGeolocation) {
-            alert(browserHasGeolocation ?
-                "Ошибка: Сервис геолокации не смог определить ваше местоположение." :
-                "Ошибка: Ваш браузер не поддерживает геолокацию.");
+            if (!browserHasGeolocation) {
+                alert("Ваш браузер не поддерживает геолокацию.");
+            }
         }
 
         // Начало отслеживания маршрута
@@ -836,7 +1013,10 @@
             startTime = new Date();
             distance = 0;
             lastPosition = null;
-            routePath.setPath([]);
+            
+            if (routePath) {
+                routePath.setPath([]);
+            }
             
             // Обновление интерфейса
             document.querySelector('.control-button.start .control-icon').classList.add('pulse');
@@ -854,18 +1034,23 @@
                         };
                         
                         // Обновление маркера положения
-                        currentPositionMarker.setPosition(pos);
+                        if (currentPositionMarker) {
+                            currentPositionMarker.setPosition(pos);
+                        }
                         
                         // Добавление точки в маршрут
-                        const path = routePath.getPath();
-                        path.push(pos);
+                        if (routePath) {
+                            const path = routePath.getPath();
+                            path.push(pos);
+                        }
                         
                         // Расчет дистанции
                         if (lastPosition) {
-                            const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                            const dist = google ? google.maps.geometry.spherical.computeDistanceBetween(
                                 new google.maps.LatLng(lastPosition.lat, lastPosition.lng),
                                 new google.maps.LatLng(pos.lat, pos.lng)
-                            );
+                            ) : 0;
+                            
                             distance += dist / 1000; // в километрах
                         }
                         
@@ -875,7 +1060,9 @@
                         updateStats();
                         
                         // Центрирование карты на текущем положении
-                        map.panTo(pos);
+                        if (map) {
+                            map.panTo(pos);
+                        }
                     });
                 }
             }, 2000); // Обновление каждые 2 секунды
@@ -921,9 +1108,12 @@
         function saveRouteToFirebase() {
             if (!currentUser) return;
             
-            const path = routePath.getPath().getArray().map(point => {
-                return { lat: point.lat(), lng: point.lng() };
-            });
+            let path = [];
+            if (routePath) {
+                path = routePath.getPath().getArray().map(point => {
+                    return { lat: point.lat(), lng: point.lng() };
+                });
+            }
             
             const routeData = {
                 userId: currentUser.login,
