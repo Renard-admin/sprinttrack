@@ -3,979 +3,948 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SprintTrack</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>SprintTrack - Отслеживайте свои маршруты</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comfortaa:wght@500&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0&libraries=places,geometry"></script>
     <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-light: #81C784;
+            --primary-dark: #388E3C;
+            --secondary: #FF9800;
+            --secondary-light: #FFB74D;
+            --accent: #2196F3;
+            --accent-light: #64B5F6;
+            --background: #F5F5F5;
+            --card: #FFFFFF;
+            --text: #333333;
+            --text-light: #757575;
+            --success: #4CAF50;
+            --warning: #FF9800;
+            --error: #F44336;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f0f4f8; /* Light blue-gray background */
-            color: #334155; /* Darker text */
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
         }
-        #map {
-            height: 60vh; /* 60% of viewport height */
-            width: 100%;
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* shadow-md */
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+            transition: all 0.3s ease;
         }
-        .btn-primary {
-            background-color: #3b82f6; /* Blue-500 */
+
+        /* Стили для боковой панели */
+        .sidebar {
+            width: 320px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem; /* rounded-lg */
-            font-weight: 600; /* font-semibold */
-            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            overflow-y: auto;
         }
-        .btn-primary:hover {
-            background-color: #2563eb; /* Blue-600 */
-            transform: translateY(-1px);
+
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
         }
-        .btn-primary:active {
-            transform: translateY(0);
+
+        .logo h1 {
+            font-family: 'Comfortaa', cursive;
+            font-size: 24px;
+            margin-left: 10px;
+            font-weight: 700;
         }
-        .btn-secondary {
-            background-color: #e2e8f0; /* Slate-200 */
-            color: #334155; /* Slate-700 */
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+
+        .logo-icon {
+            font-size: 28px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin-right: 15px;
+        }
+
+        .user-info h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .user-info p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 16px;
             font-weight: 600;
-            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
         }
-        .btn-secondary:hover {
-            background-color: #cbd5e1; /* Slate-300 */
-            transform: translateY(-1px);
+
+        .section-title i {
+            margin-right: 10px;
         }
-        .btn-secondary:active {
-            transform: translateY(0);
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.05);
         }
-        .input-field {
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            border: 1px solid #cbd5e1; /* Slate-300 */
-            width: 100%;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.15);
         }
-        .card {
-            background-color: white;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.2);
+            font-weight: 600;
         }
-        .modal {
+
+        .nav-item i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+
+        .transport-type {
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .transport-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .transport-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .transport-option {
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .transport-option:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .transport-option.active {
+            background: var(--secondary);
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* Стили для основной области карты */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #map {
+            flex: 1;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .map-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .search-box {
+            width: 400px;
+            background-color: var(--card);
+            padding: 12px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+            background: transparent;
+        }
+
+        .search-box i {
+            color: var(--text-light);
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 20px;
+            color: var(--primary);
+        }
+
+        .action-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+
+        .tracking-controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 2;
+            background-color: var(--card);
+            padding: 15px 25px;
+            border-radius: 30px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .control-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            min-width: 70px;
+        }
+
+        .control-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .control-button.start .control-icon {
+            background: linear-gradient(135deg, var(--success) 0%, var(--primary) 100%);
+        }
+
+        .control-button.stop .control-icon {
+            background: linear-gradient(135deg, var(--error) 0%, #e53935 100%);
+        }
+
+        .control-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .stats-panel {
+            position: absolute;
+            bottom: 40px;
+            right: 20px;
+            width: 280px;
+            background-color: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            z-index: 2;
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stats-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stats-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        /* Стили для экрана входа */
+        .login-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            transition: opacity 0.5s ease;
         }
-        .modal-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            max-width: 90%;
+
+        .login-box {
             width: 400px;
+            background-color: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
         }
-        .tab-button {
-            padding: 0.75rem 1.25rem;
-            border-radius: 0.5rem;
+
+        .login-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo h1 {
+            font-family: 'Comfortaa', cursive;
+            font-size: 32px;
+            color: var(--primary);
+            margin-left: 10px;
+        }
+
+        .login-logo .logo-icon {
+            font-size: 36px;
+            color: var(--accent);
+        }
+
+        .login-form .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .login-form label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .login-form input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s ease-in-out;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
         }
-        .tab-button.active {
-            background-color: #3b82f6;
-            color: white;
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
         }
-        .tab-button:not(.active):hover {
-            background-color: #e2e8f0;
+
+        .login-footer {
+            margin-top: 25px;
+            font-size: 14px;
+            color: var(--text-light);
         }
-        .route-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            background-color: #f8fafc;
-            border-radius: 0.5rem;
-            margin-bottom: 0.5rem;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+        /* Стили для анимаций и состояний */
+        .hidden {
+            display: none;
         }
-        .route-item:hover {
-            background-color: #f0f4f8;
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(76, 175, 80, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.5s forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
-
-    <!-- Global Message Modal -->
-    <div id="globalMessageModal" class="modal hidden">
-        <div class="modal-content">
-            <p id="globalMessageText" class="text-lg mb-4"></p>
-            <button onclick="hideGlobalMessage()" class="btn-primary">ОК</button>
-        </div>
-    </div>
-
-    <!-- Login Screen -->
-    <div id="loginScreen" class="w-full max-w-md card mt-12 p-6">
-        <h1 class="text-4xl font-bold text-center mb-6 text-blue-600">SprintTrack</h1>
-        <p class="text-center text-gray-600 mb-8">Войдите, чтобы начать отслеживать свои тренировки!</p>
-        <div class="mb-4">
-            <label for="loginUsername" class="block text-gray-700 text-sm font-semibold mb-2">Логин:</label>
-            <input type="text" id="loginUsername" class="input-field" placeholder="Введите ваш логин">
-        </div>
-        <div class="mb-6">
-            <label for="loginPassword" class="block text-gray-700 text-sm font-semibold mb-2">Пароль:</label>
-            <input type="password" id="loginPassword" class="input-field" placeholder="Введите ваш пароль">
-        </div>
-        <button id="loginButton" class="btn-primary w-full">Войти</button>
-    </div>
-
-    <!-- Main Application Screen -->
-    <div id="appScreen" class="w-full max-w-4xl card mt-4 p-6 hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-3xl font-bold text-blue-600">Привет, <span id="currentUsername"></span>!</h2>
-            <button id="logoutButton" class="btn-secondary">Выйти</button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="card p-4 flex flex-col items-center">
-                <p class="text-sm text-gray-500">Время</p>
-                <p id="displayTime" class="text-2xl font-bold text-gray-800">00:00:00</p>
+<body>
+    <!-- Экран входа -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-box slide-in">
+            <div class="login-logo">
+                <div class="logo-icon">🚴</div>
+                <h1>SprintTrack</h1>
             </div>
-            <div class="card p-4 flex flex-col items-center">
-                <p class="text-sm text-gray-500">Дистанция</p>
-                <p id="displayDistance" class="text-2xl font-bold text-gray-800">0.00 км</p>
-            </div>
-            <div class="card p-4 flex flex-col items-center">
-                <p class="text-sm text-gray-500">Скорость</p>
-                <p id="displaySpeed" class="text-2xl font-bold text-gray-800">0.00 км/ч</p>
-            </div>
-        </div>
-
-        <!-- Map Section -->
-        <div id="map" class="mb-6"></div>
-
-        <!-- Tracking Controls -->
-        <div class="flex justify-center gap-4 mb-6">
-            <button id="startTrackingBtn" class="btn-primary">Начать тренировку</button>
-            <button id="stopTrackingBtn" class="btn-secondary hidden">Завершить тренировку</button>
-            <button id="saveRouteBtn" class="btn-primary hidden">Сохранить маршрут</button>
-        </div>
-
-        <!-- Movement Type Selection -->
-        <div class="mb-6">
-            <h3 class="text-xl font-semibold mb-3">Тип передвижения:</h3>
-            <div class="flex flex-wrap gap-2 mb-4">
-                <button class="tab-button active" data-type="walking">Пешком</button>
-                <button class="tab-button" data-type="cycling">Велосипед</button>
-            </div>
-
-            <div id="walkingOptions" class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <button class="btn-secondary" data-subtype="sprint">Спринт</button>
-                <button class="btn-secondary" data-subtype="walk">Ходьба</button>
-                <button class="btn-secondary" data-subtype="run">Бег</button>
-                <button class="btn-secondary" data-subtype="hiking">Хайкинг</button>
-            </div>
-
-            <div id="cyclingOptions" class="grid grid-cols-2 md:grid-cols-4 gap-3 hidden">
-                <button class="btn-secondary" data-subtype="balanced">Сбалансированный</button>
-                <button class="btn-secondary" data-subtype="shortest">Самый короткий</button>
-                <button class="btn-secondary" data-subtype="bike_paths">Велодорожки</button>
-                <button class="btn-secondary" data-subtype="popular">Популярные</button>
-                <button class="btn-secondary" data-subtype="e_bike">E-bike</button>
-                <button class="btn-secondary" data-subtype="smooth_ride">Плавная езда</button>
-                <button class="btn-secondary" data-subtype="road_bike">Шоссейный велосипед</button>
-                <button class="btn-secondary" data-subtype="mountain_bike">Горный велосипед</button>
-            </div>
-        </div>
-
-        <!-- Route Management and Ranking Tabs -->
-        <div class="mb-6">
-            <div class="flex border-b border-gray-200 mb-4">
-                <button id="tabRecentRoutes" class="tab-button active">Мои маршруты</button>
-                <button id="tabFavoriteRoutes" class="tab-button">Избранное</button>
-                <button id="tabRecommendedRoutes" class="tab-button">Рекомендуемые</button>
-                <button id="tabRanking" class="tab-button">Рейтинг</button>
-            </div>
-
-            <!-- Recent Routes Tab Content -->
-            <div id="recentRoutesContent" class="tab-content">
-                <h3 class="text-xl font-semibold mb-3">Последние маршруты:</h3>
-                <div id="recentRoutesList" class="space-y-2">
-                    <!-- Routes will be loaded here -->
-                    <p class="text-gray-500" id="noRecentRoutes">Нет сохраненных маршрутов.</p>
+            <form class="login-form" id="loginForm">
+                <div class="input-group">
+                    <label for="username">Логин</label>
+                    <input type="text" id="username" placeholder="Введите ваш логин" required>
                 </div>
-            </div>
-
-            <!-- Favorite Routes Tab Content -->
-            <div id="favoriteRoutesContent" class="tab-content hidden">
-                <h3 class="text-xl font-semibold mb-3">Избранные маршруты:</h3>
-                <div id="favoriteRoutesList" class="space-y-2">
-                    <!-- Favorite routes will be loaded here -->
-                    <p class="text-gray-500" id="noFavoriteRoutes">Нет избранных маршрутов.</p>
+                <div class="input-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" placeholder="Введите ваш пароль" required>
                 </div>
-            </div>
-
-            <!-- Recommended Routes Tab Content -->
-            <div id="recommendedRoutesContent" class="tab-content hidden">
-                <h3 class="text-xl font-semibold mb-3">Рекомендуемые маршруты:</h3>
-                <div id="recommendedRoutesList" class="space-y-2">
-                    <!-- Recommended routes will be loaded here -->
-                    <p class="text-gray-500" id="noRecommendedRoutes">Нет рекомендуемых маршрутов.</p>
-                </div>
-            </div>
-
-            <!-- Ranking Tab Content -->
-            <div id="rankingContent" class="tab-content hidden">
-                <h3 class="text-xl font-semibold mb-3">Рейтинг пользователей:</h3>
-                <div id="rankingList" class="space-y-2">
-                    <!-- Ranking will be loaded here -->
-                    <p class="text-gray-500" id="noRankingData">Нет данных для рейтинга.</p>
-                </div>
+                <button type="submit" class="login-button">Войти</button>
+            </form>
+            <div class="login-footer">
+                Присоединяйтесь к сообществу активных людей!
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Основной интерфейс приложения -->
+    <div class="app-container hidden" id="appContainer">
+        <!-- Боковая панель -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🚴</div>
+                <h1>SprintTrack</h1>
+            </div>
 
-        // Global variables for Firebase and App
-        let app, db, auth;
-        let userId = null;
-        let currentUserData = null; // Stores current user's profile data
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatar">R</div>
+                <div class="user-info">
+                    <h3 id="userName">Renard</h3>
+                    <p id="userLevel">Профессионал</p>
+                </div>
+            </div>
 
-        // Firebase configuration from global variable (provided by Canvas environment)
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            <div class="nav-section">
+                <div class="section-title">
+                    <i>📊</i> Статистика
+                </div>
+                <div class="nav-item active">
+                    <i>📍</i> Текущий маршрут
+                </div>
+                <div class="nav-item">
+                    <i>🏆</i> Мои достижения
+                </div>
+                <div class="nav-item">
+                    <i>📈</i> Прогресс
+                </div>
+            </div>
 
-        // Initialize Firebase
-        if (Object.keys(firebaseConfig).length > 0) {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } else {
-            showGlobalMessage("Ошибка: Конфигурация Firebase не найдена. Приложение может работать некорректно.");
-        }
+            <div class="nav-section">
+                <div class="section-title">
+                    <i>👥</i> Сообщество
+                </div>
+                <div class="nav-item">
+                    <i>🏅</i> Рейтинг
+                </div>
+                <div class="nav-item">
+                    <i>👫</i> Друзья
+                </div>
+                <div class="nav-item">
+                    <i>🗣️</i> Обсуждения
+                </div>
+            </div>
 
-        // Hardcoded user credentials (as per user request - INSECURE FOR PRODUCTION)
-        const USERS = {
-            "Renard": "121212"
+            <div class="nav-section">
+                <div class="section-title">
+                    <i>⚙️</i> Настройки
+                </div>
+                <div class="nav-item">
+                    <i>🔒</i> Безопасность
+                </div>
+                <div class="nav-item">
+                    <i>🔔</i> Уведомления
+                </div>
+                <div class="nav-item">
+                    <i>🌐</i> Язык
+                </div>
+            </div>
+
+            <div class="transport-type">
+                <div class="transport-title">
+                    <i>🚶</i> Пешком
+                </div>
+                <div class="transport-options">
+                    <div class="transport-option">Спринт</div>
+                    <div class="transport-option">Ходьба</div>
+                    <div class="transport-option active">Бег</div>
+                    <div class="transport-option">Хайкинг</div>
+                </div>
+            </div>
+
+            <div class="transport-type">
+                <div class="transport-title">
+                    <i>🚴</i> Велосипед
+                </div>
+                <div class="transport-options">
+                    <div class="transport-option active">Сбалансированный</div>
+                    <div class="transport-option">Самый короткий</div>
+                    <div class="transport-option">Велодорожки</div>
+                    <div class="transport-option">Популярные</div>
+                    <div class="transport-option">E-bike</div>
+                    <div class="transport-option">Плавная езда</div>
+                    <div class="transport-option">Шоссейный</div>
+                    <div class="transport-option">Горный</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Основное содержимое -->
+        <div class="main-content">
+            <div id="map"></div>
+            
+            <div class="map-overlay">
+                <div class="search-box">
+                    <input type="text" placeholder="Поиск мест или адресов...">
+                    <i>🔍</i>
+                </div>
+                <div class="action-buttons">
+                    <div class="action-button">
+                        <i>📍</i>
+                    </div>
+                    <div class="action-button">
+                        <i>🗺️</i>
+                    </div>
+                    <div class="action-button">
+                        <i>⭐</i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tracking-controls">
+                <div class="control-button">
+                    <div class="control-icon">
+                        <i>⏪</i>
+                    </div>
+                    <div class="control-label">Назад</div>
+                </div>
+                <div class="control-button start">
+                    <div class="control-icon pulse">
+                        <i>▶️</i>
+                    </div>
+                    <div class="control-label">Старт</div>
+                </div>
+                <div class="control-button stop">
+                    <div class="control-icon">
+                        <i>⏹️</i>
+                    </div>
+                    <div class="control-label">Стоп</div>
+                </div>
+                <div class="control-button">
+                    <div class="control-icon">
+                        <i>⏩</i>
+                    </div>
+                    <div class="control-label">Вперед</div>
+                </div>
+            </div>
+
+            <div class="stats-panel">
+                <div class="stats-header">
+                    <div class="stats-title">Статистика</div>
+                    <div class="action-button">
+                        <i>📊</i>
+                    </div>
+                </div>
+                <div class="stats-content">
+                    <div class="stat-item">
+                        <div class="stat-value" id="distance">0.0 км</div>
+                        <div class="stat-label">Дистанция</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="time">00:00</div>
+                        <div class="stat-label">Время</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="speed">0 км/ч</div>
+                        <div class="stat-label">Скорость</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="pace">0:00/км</div>
+                        <div class="stat-label">Темп</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBaO6MfwDB0CCgvDto7VmHgJxN_e-ZsIgE",
+            authDomain: "sprinttrack-941b5.firebaseapp.com",
+            projectId: "sprinttrack-941b5",
+            storageBucket: "sprinttrack-941b5.firebasestorage.app",
+            messagingSenderId: "235437842194",
+            appId: "1:235437842194:web:a8c47588fac613503a1dcb",
+            measurementId: "G-SQ2TE2V5D3"
         };
 
-        // --- Firebase Authentication and Data Loading ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                userId = user.uid;
-                console.log("Firebase User ID:", userId);
-                // Try to sign in with custom token if available, otherwise anonymously
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                        console.log("Signed in with custom token.");
-                    } catch (error) {
-                        console.error("Error signing in with custom token:", error);
-                        await signInAnonymously(auth);
-                        console.log("Signed in anonymously due to custom token error.");
-                    }
-                } else {
-                    await signInAnonymously(auth);
-                    console.log("Signed in anonymously.");
-                }
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
-                // Listen for changes to the current user's profile
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profiles`, userId);
-                onSnapshot(userDocRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        currentUserData = docSnap.data();
-                        console.log("Current user data updated:", currentUserData);
-                        if (currentUserData.loggedIn) {
-                            showAppScreen(currentUserData.username);
-                            loadRecentRoutes();
-                            loadFavoriteRoutes();
-                            loadRecommendedRoutes(); // Load recommended routes
-                            loadRanking();
-                        } else {
-                            showLoginScreen();
-                        }
-                    } else {
-                        // User profile doesn't exist yet, or not logged in
-                        showLoginScreen();
-                    }
-                }, (error) => {
-                    console.error("Error listening to user profile:", error);
-                    showLoginScreen();
-                });
+        // Пользователи (в реальном приложении хранится на сервере)
+        const users = [
+            { login: "Renard", password: "121212", name: "Renard", level: "Профессионал" },
+            { login: "Alex", password: "123456", name: "Alex", level: "Продвинутый" },
+            { login: "Maria", password: "qwerty", name: "Maria", level: "Новичок" }
+        ];
 
-            } else {
-                userId = null;
-                currentUserData = null;
-                showLoginScreen();
-                console.log("No Firebase user.");
-            }
-        });
-
-        // --- UI State Management ---
-        function showLoginScreen() {
-            document.getElementById('loginScreen').classList.remove('hidden');
-            document.getElementById('appScreen').classList.add('hidden');
-        }
-
-        function showAppScreen(username) {
-            document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('appScreen').classList.remove('hidden');
-            document.getElementById('currentUsername').textContent = username;
-        }
-
-        // --- Global Message Modal ---
-        function showGlobalMessage(message) {
-            document.getElementById('globalMessageText').textContent = message;
-            document.getElementById('globalMessageModal').classList.remove('hidden');
-        }
-
-        function hideGlobalMessage() {
-            document.getElementById('globalMessageModal').classList.add('hidden');
-        }
-
-        // --- Login Logic ---
-        document.getElementById('loginButton').addEventListener('click', async () => {
-            const usernameInput = document.getElementById('loginUsername').value;
-            const passwordInput = document.getElementById('loginPassword').value;
-
-            if (USERS[usernameInput] === passwordInput) {
-                // User authenticated locally, now update Firebase profile
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profiles`, userId);
-                try {
-                    await setDoc(userDocRef, {
-                        username: usernameInput,
-                        loggedIn: true,
-                        totalDistance: currentUserData?.totalDistance || 0,
-                        totalTime: currentUserData?.totalTime || 0,
-                        lastLogin: new Date().toISOString()
-                    }, { merge: true });
-                    showGlobalMessage(`Добро пожаловать, ${usernameInput}!`);
-                } catch (e) {
-                    console.error("Error setting user profile:", e);
-                    showGlobalMessage("Ошибка при сохранении профиля пользователя.");
-                }
-            } else {
-                showGlobalMessage("Неверный логин или пароль.");
-            }
-        });
-
-        document.getElementById('logoutButton').addEventListener('click', async () => {
-            if (userId && currentUserData) {
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profiles`, userId);
-                try {
-                    await updateDoc(userDocRef, { loggedIn: false });
-                    showGlobalMessage("Вы вышли из системы.");
-                    showLoginScreen();
-                } catch (e) {
-                    console.error("Error logging out:", e);
-                    showGlobalMessage("Ошибка при выходе из системы.");
-                }
-            }
-        });
-
-        // --- Google Maps Integration ---
+        // Переменные приложения
         let map;
         let currentPositionMarker;
-        let trackingPath;
-        let watchId;
-        let routeCoordinates = [];
-        let trackingStartTime = 0;
-        let totalDistance = 0;
+        let routePath;
+        let trackingInterval;
+        let trackingActive = false;
+        let startTime;
+        let distance = 0;
         let lastPosition = null;
-        let selectedMovementType = 'walking';
-        let selectedMovementSubtype = 'walk'; // Default subtype for walking
+        let currentUser = null;
 
-        const GOOGLE_MAPS_API_KEY = "AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0";
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            // Проверка авторизации
+            const loginForm = document.getElementById('loginForm');
+            loginForm.addEventListener('submit', handleLogin);
+            
+            // Инициализация карты после входа
+            // Анонимная аутентификация для Firebase
+            auth.signInAnonymously()
+                .then(() => {
+                    console.log("Анонимная аутентификация выполнена");
+                })
+                .catch(error => {
+                    console.error("Ошибка анонимной аутентификации:", error);
+                });
+        });
 
+        // Обработка входа
+        function handleLogin(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Проверка учетных данных
+            const user = users.find(u => u.login === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('userName').textContent = user.name;
+                document.getElementById('userLevel').textContent = user.level;
+                document.getElementById('userAvatar').textContent = user.name.charAt(0);
+                
+                // Скрыть экран входа и показать приложение
+                document.getElementById('loginContainer').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                
+                // Инициализация карты
+                initMap();
+            } else {
+                alert("Неверный логин или пароль!");
+            }
+        }
+
+        // Инициализация карты
         function initMap() {
-            map = new google.maps.Map(document.getElementById("map"), {
-                center: { lat: 0, lng: 0 }, // Default center, will be updated by GPS
-                zoom: 15,
-                mapTypeId: google.maps.MapTypeId.SATELLITE, // Satellite view
-                fullscreenControl: false,
-                mapTypeControl: false,
-                streetViewControl: false,
-                zoomControl: true,
-            });
-
+            const mapOptions = {
+                center: { lat: 55.7558, lng: 37.6173 }, // Москва
+                zoom: 13,
+                mapTypeId: 'satellite',
+                styles: [
+                    {
+                        "featureType": "poi",
+                        "stylers": [{"visibility": "off"}]
+                    },
+                    {
+                        "featureType": "transit",
+                        "stylers": [{"visibility": "off"}]
+                    }
+                ]
+            };
+            
+            map = new google.maps.Map(document.getElementById('map'), mapOptions);
+            
+            // Добавление маркера текущего положения
             currentPositionMarker = new google.maps.Marker({
+                position: mapOptions.center,
                 map: map,
                 icon: {
                     path: google.maps.SymbolPath.CIRCLE,
-                    scale: 8,
-                    fillColor: '#4285F4', // Google Blue
+                    scale: 10,
+                    fillColor: "#4285F4",
                     fillOpacity: 1,
-                    strokeWeight: 2,
-                    strokeColor: '#FFFFFF'
+                    strokeColor: "#FFFFFF",
+                    strokeWeight: 2
                 },
-                title: "Ваше текущее местоположение"
+                title: "Ваше местоположение"
             });
-
-            trackingPath = new google.maps.Polyline({
+            
+            // Добавление линии маршрута
+            routePath = new google.maps.Polyline({
+                path: [],
                 geodesic: true,
-                strokeColor: '#FF0000', // Red for tracking path
+                strokeColor: "#FF5722",
                 strokeOpacity: 1.0,
                 strokeWeight: 4
             });
-            trackingPath.setMap(map);
-
-            // Try to get current position immediately
+            routePath.setMap(map);
+            
+            // Запрос геолокации
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    currentPositionMarker.setPosition(pos);
+                    map.setCenter(pos);
+                }, () => {
+                    handleLocationError(true);
+                });
+            } else {
+                handleLocationError(false);
+            }
+            
+            // Обработчики кнопок
+            document.querySelector('.control-button.start').addEventListener('click', startTracking);
+            document.querySelector('.control-button.stop').addEventListener('click', stopTracking);
+        }
+
+        // Обработка ошибок геолокации
+        function handleLocationError(browserHasGeolocation) {
+            alert(browserHasGeolocation ?
+                "Ошибка: Сервис геолокации не смог определить ваше местоположение." :
+                "Ошибка: Ваш браузер не поддерживает геолокацию.");
+        }
+
+        // Начало отслеживания маршрута
+        function startTracking() {
+            if (trackingActive) return;
+            
+            trackingActive = true;
+            startTime = new Date();
+            distance = 0;
+            lastPosition = null;
+            routePath.setPath([]);
+            
+            // Обновление интерфейса
+            document.querySelector('.control-button.start .control-icon').classList.add('pulse');
+            
+            // Обновление статистики
+            updateStats();
+            
+            // Запуск отслеживания
+            trackingInterval = setInterval(() => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(position => {
                         const pos = {
                             lat: position.coords.latitude,
-                            lng: position.coords.longitude,
+                            lng: position.coords.longitude
                         };
-                        map.setCenter(pos);
+                        
+                        // Обновление маркера положения
                         currentPositionMarker.setPosition(pos);
-                    },
-                    () => {
-                        showGlobalMessage("Не удалось получить ваше местоположение. Пожалуйста, разрешите доступ к GPS.");
-                    }
-                );
-            } else {
-                showGlobalMessage("Ваш браузер не поддерживает геолокацию.");
-            }
-        }
-
-        // Load Google Maps API script
-        function loadGoogleMapsScript() {
-            const script = document.createElement('script');
-            script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&callback=initMap`;
-            script.async = true;
-            script.defer = true;
-            document.head.appendChild(script);
-        }
-
-        window.initMap = initMap; // Make initMap globally accessible for Google Maps callback
-
-        // --- GPS Tracking Logic ---
-        function startTracking() {
-            if (!navigator.geolocation) {
-                showGlobalMessage("Ваш браузер не поддерживает геолокацию.");
-                return;
-            }
-
-            document.getElementById('startTrackingBtn').classList.add('hidden');
-            document.getElementById('stopTrackingBtn').classList.remove('hidden');
-            document.getElementById('saveRouteBtn').classList.add('hidden'); // Hide save button until tracking stops
-
-            routeCoordinates = [];
-            totalDistance = 0;
-            lastPosition = null;
-            trackingStartTime = Date.now();
-            trackingPath.setPath([]); // Clear previous path
-
-            document.getElementById('displayTime').textContent = '00:00:00';
-            document.getElementById('displayDistance').textContent = '0.00 км';
-            document.getElementById('displaySpeed').textContent = '0.00 км/ч';
-
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const newPos = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    };
-                    currentPositionMarker.setPosition(newPos);
-                    map.setCenter(newPos);
-
-                    routeCoordinates.push(newPos);
-                    trackingPath.setPath(routeCoordinates);
-
-                    if (lastPosition) {
-                        const dist = google.maps.geometry.spherical.computeDistanceBetween(
-                            new google.maps.LatLng(lastPosition.lat, lastPosition.lng),
-                            new google.maps.LatLng(newPos.lat, newPos.lng)
-                        );
-                        totalDistance += dist; // distance in meters
-                    }
-                    lastPosition = newPos;
-
-                    updateTrackingStats();
-                },
-                (error) => {
-                    console.error("Geolocation error:", error);
-                    showGlobalMessage("Ошибка геолокации: " + error.message);
-                    stopTracking(); // Stop tracking on error
-                },
-                {
-                    enableHighAccuracy: true,
-                    maximumAge: 0,
-                    timeout: 5000
-                }
-            );
-            showGlobalMessage("Отслеживание начато!");
-        }
-
-        function stopTracking() {
-            if (watchId !== undefined) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = undefined;
-            }
-
-            document.getElementById('startTrackingBtn').classList.remove('hidden');
-            document.getElementById('stopTrackingBtn').classList.add('hidden');
-            document.getElementById('saveRouteBtn').classList.remove('hidden'); // Show save button
-
-            showGlobalMessage("Отслеживание завершено. Вы можете сохранить маршрут.");
-        }
-
-        function updateTrackingStats() {
-            const currentTime = Date.now();
-            const elapsedTime = currentTime - trackingStartTime; // milliseconds
-
-            const hours = Math.floor(elapsedTime / 3600000);
-            const minutes = Math.floor((elapsedTime % 3600000) / 60000);
-            const seconds = Math.floor(((elapsedTime % 3600000) % 60000) / 1000);
-
-            const formattedTime =
-                String(hours).padStart(2, '0') + ':' +
-                String(minutes).padStart(2, '0') + ':' +
-                String(seconds).padStart(2, '0');
-            document.getElementById('displayTime').textContent = formattedTime;
-
-            const distanceKm = totalDistance / 1000; // meters to km
-            document.getElementById('displayDistance').textContent = distanceKm.toFixed(2) + ' км';
-
-            // Calculate average speed in km/h
-            const speedKmh = elapsedTime > 0 ? (distanceKm / (elapsedTime / 3600000)).toFixed(2) : '0.00';
-            document.getElementById('displaySpeed').textContent = speedKmh + ' км/ч';
-        }
-
-        document.getElementById('startTrackingBtn').addEventListener('click', startTracking);
-        document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
-
-        // --- Save Route Logic ---
-        document.getElementById('saveRouteBtn').addEventListener('click', async () => {
-            if (!userId) {
-                showGlobalMessage("Пожалуйста, войдите, чтобы сохранить маршрут.");
-                return;
-            }
-            if (routeCoordinates.length < 2) {
-                showGlobalMessage("Недостаточно данных для сохранения маршрута.");
-                return;
-            }
-
-            const routeData = {
-                userId: userId,
-                username: currentUserData.username,
-                timestamp: new Date().toISOString(),
-                durationMs: Date.now() - trackingStartTime,
-                distanceMeters: totalDistance,
-                coordinates: JSON.stringify(routeCoordinates), // Store as string to handle Firestore array limits
-                type: selectedMovementType,
-                subtype: selectedMovementSubtype,
-                isFavorite: false // Default to not favorite
-            };
-
-            try {
-                // Save to user's private collection
-                const routesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/routes`);
-                await addDoc(routesCollectionRef, routeData);
-
-                // Update user's total stats
-                const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/profiles`, userId);
-                await updateDoc(userDocRef, {
-                    totalDistance: (currentUserData.totalDistance || 0) + routeData.distanceMeters,
-                    totalTime: (currentUserData.totalTime || 0) + routeData.durationMs
-                });
-
-                showGlobalMessage("Маршрут успешно сохранен!");
-                document.getElementById('saveRouteBtn').classList.add('hidden'); // Hide save button after saving
-                loadRecentRoutes(); // Reload recent routes
-                loadRanking(); // Reload ranking
-            } catch (e) {
-                console.error("Error saving route:", e);
-                showGlobalMessage("Ошибка при сохранении маршрута: " + e.message);
-            }
-        });
-
-        // --- Route Loading and Display ---
-        async function loadRecentRoutes() {
-            if (!userId) return;
-            const recentRoutesList = document.getElementById('recentRoutesList');
-            recentRoutesList.innerHTML = ''; // Clear existing list
-            document.getElementById('noRecentRoutes').classList.remove('hidden');
-
-            const q = query(collection(db, `artifacts/${appId}/users/${userId}/routes`));
-            const querySnapshot = await getDocs(q);
-
-            let routes = [];
-            querySnapshot.forEach((doc) => {
-                routes.push({ id: doc.id, ...doc.data() });
-            });
-
-            // Sort by timestamp descending (most recent first)
-            routes.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-            // Keep only the last 6 routes
-            routes = routes.slice(0, 6);
-
-            if (routes.length > 0) {
-                document.getElementById('noRecentRoutes').classList.add('hidden');
-                routes.forEach(route => {
-                    recentRoutesList.appendChild(createRouteListItem(route, 'recent'));
-                });
-            }
-        }
-
-        async function loadFavoriteRoutes() {
-            if (!userId) return;
-            const favoriteRoutesList = document.getElementById('favoriteRoutesList');
-            favoriteRoutesList.innerHTML = ''; // Clear existing list
-            document.getElementById('noFavoriteRoutes').classList.remove('hidden');
-
-            const q = query(collection(db, `artifacts/${appId}/users/${userId}/routes`), where("isFavorite", "==", true));
-            const querySnapshot = await getDocs(q);
-
-            let routes = [];
-            querySnapshot.forEach((doc) => {
-                routes.push({ id: doc.id, ...doc.data() });
-            });
-
-            if (routes.length > 0) {
-                document.getElementById('noFavoriteRoutes').classList.add('hidden');
-                routes.forEach(route => {
-                    favoriteRoutesList.appendChild(createRouteListItem(route, 'favorite'));
-                });
-            }
-        }
-
-        async function loadRecommendedRoutes() {
-            // This is a placeholder for a more complex "recommended routes" logic.
-            // For now, it will simply show some conceptual routes or a message.
-            // In a real app, this might involve:
-            // - AI-generated routes based on user preferences/past activities
-            // - Popular routes from other users (if public data is available)
-            // - Routes near the user's current location
-            const recommendedRoutesList = document.getElementById('recommendedRoutesList');
-            recommendedRoutesList.innerHTML = '';
-            document.getElementById('noRecommendedRoutes').classList.remove('hidden');
-
-            // Example of a conceptual recommended route
-            const conceptualRoute = {
-                id: 'rec-1',
-                timestamp: new Date().toISOString(),
-                durationMs: 3600000, // 1 hour
-                distanceMeters: 10000, // 10 km
-                type: 'cycling',
-                subtype: 'popular',
-                coordinates: JSON.stringify([
-                    { lat: 51.169392, lng: 71.449074 }, // Astana example
-                    { lat: 51.175, lng: 71.455 },
-                    { lat: 51.180, lng: 71.440 }
-                ]),
-                name: 'Живописный маршрут по набережной',
-                description: 'Отличный маршрут для прогулок и катания на велосипеде вдоль реки.'
-            };
-            // Add a conceptual recommended route
-            recommendedRoutesList.appendChild(createRouteListItem(conceptualRoute, 'recommended'));
-            document.getElementById('noRecommendedRoutes').classList.add('hidden'); // Hide "No recommended" if we add one
-        }
-
-
-        function createRouteListItem(route, listType) {
-            const div = document.createElement('div');
-            div.className = 'route-item';
-
-            const date = new Date(route.timestamp).toLocaleDateString('ru-RU');
-            const distanceKm = (route.distanceMeters / 1000).toFixed(2);
-            const durationSeconds = Math.floor(route.durationMs / 1000);
-            const hours = Math.floor(durationSeconds / 3600);
-            const minutes = Math.floor((durationSeconds % 3600) / 60);
-            const seconds = durationSeconds % 60;
-            const formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-            div.innerHTML = `
-                <div>
-                    <p class="font-semibold">${route.name || `Маршрут от ${date}`}</p>
-                    <p class="text-sm text-gray-600">${distanceKm} км | ${formattedDuration} | ${getMovementTypeText(route.type, route.subtype)}</p>
-                </div>
-                <div class="flex gap-2">
-                    <button class="btn-secondary btn-small" data-action="repeat" data-route-id="${route.id}">Повторить</button>
-                    ${listType === 'recent' ? `<button class="btn-secondary btn-small" data-action="favorite" data-route-id="${route.id}">В избранное</button>` : ''}
-                    ${listType === 'favorite' ? `<button class="btn-secondary btn-small" data-action="unfavorite" data-route-id="${route.id}">Удалить из избранного</button>` : ''}
-                    <button class="btn-secondary btn-small" data-action="share" data-route-id="${route.id}">Поделиться</button>
-                </div>
-            `;
-
-            // Add event listeners for buttons
-            div.querySelectorAll('button').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const action = e.target.dataset.action;
-                    const routeId = e.target.dataset.routeId;
-                    handleRouteAction(action, routeId, route);
-                });
-            });
-
-            return div;
-        }
-
-        function getMovementTypeText(type, subtype) {
-            const types = {
-                walking: {
-                    sprint: 'Спринт (пешком)', walk: 'Ходьба', run: 'Бег', hiking: 'Хайкинг'
-                },
-                cycling: {
-                    balanced: 'Велосипед (Сбалансированный)', shortest: 'Велосипед (Самый короткий)',
-                    bike_paths: 'Велосипед (Велодорожки)', popular: 'Велосипед (Популярные)',
-                    e_bike: 'Велосипед (E-bike)', smooth_ride: 'Велосипед (Плавная езда)',
-                    road_bike: 'Велосипед (Шоссейный)', mountain_bike: 'Велосипед (Горный)'
-                }
-            };
-            return types[type]?.[subtype] || `${type} (${subtype})`;
-        }
-
-        async function handleRouteAction(action, routeId, routeData) {
-            if (!userId) {
-                showGlobalMessage("Пожалуйста, войдите.");
-                return;
-            }
-
-            const routeDocRef = doc(db, `artifacts/${appId}/users/${userId}/routes`, routeId);
-
-            switch (action) {
-                case 'repeat':
-                    showGlobalMessage(`Повторение маршрута: ${routeData.name || 'Без названия'}. Следуйте по красной линии!`);
-                    repeatRoute(routeData);
-                    break;
-                case 'favorite':
-                    try {
-                        await updateDoc(routeDocRef, { isFavorite: true });
-                        showGlobalMessage("Маршрут добавлен в избранное!");
-                        loadRecentRoutes();
-                        loadFavoriteRoutes();
-                    } catch (e) {
-                        console.error("Error adding to favorites:", e);
-                        showGlobalMessage("Ошибка при добавлении в избранное.");
-                    }
-                    break;
-                case 'unfavorite':
-                    try {
-                        await updateDoc(routeDocRef, { isFavorite: false });
-                        showGlobalMessage("Маршрут удален из избранного.");
-                        loadRecentRoutes();
-                        loadFavoriteRoutes();
-                    } catch (e) {
-                        console.error("Error removing from favorites:", e);
-                        showGlobalMessage("Ошибка при удалении из избранного.");
-                    }
-                    break;
-                case 'share':
-                    const shareUrl = `${window.location.origin}/?routeId=${routeId}&userId=${userId}`;
-                    try {
-                        await navigator.clipboard.writeText(shareUrl);
-                        showGlobalMessage(`Ссылка на маршрут скопирована: ${shareUrl}. Вы можете поделиться ею!`);
-                    } catch (err) {
-                        // Fallback for browsers that don't support navigator.clipboard.writeText
-                        const textArea = document.createElement("textarea");
-                        textArea.value = shareUrl;
-                        document.body.appendChild(textArea);
-                        textArea.focus();
-                        textArea.select();
-                        try {
-                            document.execCommand('copy');
-                            showGlobalMessage(`Ссылка на маршрут скопирована: ${shareUrl}. Вы можете поделиться ею!`);
-                        } catch (err) {
-                            showGlobalMessage(`Не удалось скопировать ссылку. Скопируйте вручную: ${shareUrl}`);
+                        
+                        // Добавление точки в маршрут
+                        const path = routePath.getPath();
+                        path.push(pos);
+                        
+                        // Расчет дистанции
+                        if (lastPosition) {
+                            const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                                new google.maps.LatLng(lastPosition.lat, lastPosition.lng),
+                                new google.maps.LatLng(pos.lat, pos.lng)
+                            );
+                            distance += dist / 1000; // в километрах
                         }
-                        document.body.removeChild(textArea);
-                    }
-                    break;
-            }
-        }
-
-        let repeatedRoutePath;
-        function repeatRoute(routeData) {
-            if (repeatedRoutePath) {
-                repeatedRoutePath.setMap(null); // Clear previous repeated path
-            }
-
-            const coords = JSON.parse(routeData.coordinates);
-            if (coords && coords.length > 0) {
-                repeatedRoutePath = new google.maps.Polyline({
-                    path: coords,
-                    geodesic: true,
-                    strokeColor: '#00FF00', // Green for repeated path
-                    strokeOpacity: 0.8,
-                    strokeWeight: 6
-                });
-                repeatedRoutePath.setMap(map);
-                map.fitBounds(new google.maps.LatLngBounds().extend(coords[0]).extend(coords[coords.length - 1]));
-            }
-        }
-
-        // --- Ranking Logic ---
-        async function loadRanking() {
-            const rankingList = document.getElementById('rankingList');
-            rankingList.innerHTML = '';
-            document.getElementById('noRankingData').classList.remove('hidden');
-
-            const profilesRef = collection(db, `artifacts/${appId}/users/${userId}/profiles`); // Assuming profiles are stored under each user's private space
-            // To get a global ranking, we would ideally need a public collection of user stats,
-            // or fetch all user profiles (which can be inefficient for many users).
-            // For this example, we'll simulate by fetching all profiles associated with the current app's users.
-            // In a real multi-user app, a dedicated 'public_ranking_stats' collection would be better.
-
-            // This is a simplified approach for demonstration:
-            // Fetch all known user profiles (this would require security rules allowing read from other user's profile documents
-            // or a dedicated public collection for ranking data).
-            // For now, we'll just show the current user's stats in the ranking if no other data is available.
-            // A more robust solution would involve a cloud function aggregating public stats.
-
-            let allUsersStats = [];
-            // This part is tricky. Firestore security rules prevent reading other users' private data directly.
-            // For a true ranking, you'd need a public collection (e.g., /artifacts/{appId}/public/data/ranking_stats)
-            // where users push their aggregated public stats, or use Cloud Functions to aggregate.
-            // For this demo, we'll just add the current user's stats to the ranking.
-            if (currentUserData) {
-                allUsersStats.push({
-                    username: currentUserData.username,
-                    totalDistance: currentUserData.totalDistance || 0,
-                    totalTime: currentUserData.totalTime || 0
-                });
-            }
-
-            // You would normally fetch from a public collection like this:
-            // const publicRankingRef = collection(db, `artifacts/${appId}/public/data/ranking_stats`);
-            // const publicSnapshot = await getDocs(publicRankingRef);
-            // publicSnapshot.forEach(doc => {
-            //     allUsersStats.push(doc.data());
-            // });
-
-            allUsersStats.sort((a, b) => b.totalDistance - a.totalDistance); // Sort by total distance
-
-            if (allUsersStats.length > 0) {
-                document.getElementById('noRankingData').classList.add('hidden');
-                allUsersStats.forEach((user, index) => {
-                    const div = document.createElement('div');
-                    div.className = 'route-item';
-                    const distanceKm = (user.totalDistance / 1000).toFixed(2);
-                    const durationSeconds = Math.floor(user.totalTime / 1000);
-                    const hours = Math.floor(durationSeconds / 3600);
-                    const minutes = Math.floor((durationSeconds % 3600) / 60);
-                    const seconds = durationSeconds % 60;
-                    const formattedDuration = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-                    div.innerHTML = `
-                        <div>
-                            <p class="font-semibold">#${index + 1} ${user.username}</p>
-                            <p class="text-sm text-gray-600">Дистанция: ${distanceKm} км | Время: ${formattedDuration}</p>
-                        </div>
-                    `;
-                    rankingList.appendChild(div);
-                });
-            }
-        }
-
-        // --- Movement Type Selection ---
-        document.querySelectorAll('.tab-button[data-type]').forEach(button => {
-            button.addEventListener('click', (e) => {
-                document.querySelectorAll('.tab-button[data-type]').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                selectedMovementType = e.target.dataset.type;
-
-                document.getElementById('walkingOptions').classList.add('hidden');
-                document.getElementById('cyclingOptions').classList.add('hidden');
-
-                if (selectedMovementType === 'walking') {
-                    document.getElementById('walkingOptions').classList.remove('hidden');
-                    selectedMovementSubtype = document.querySelector('#walkingOptions .btn-secondary.active')?.dataset.subtype || 'walk';
-                } else {
-                    document.getElementById('cyclingOptions').classList.remove('hidden');
-                    selectedMovementSubtype = document.querySelector('#cyclingOptions .btn-secondary.active')?.dataset.subtype || 'balanced';
+                        
+                        lastPosition = pos;
+                        
+                        // Обновление статистики
+                        updateStats();
+                        
+                        // Центрирование карты на текущем положении
+                        map.panTo(pos);
+                    });
                 }
-            });
-        });
-
-        document.querySelectorAll('#walkingOptions .btn-secondary').forEach(button => {
-            button.addEventListener('click', (e) => {
-                document.querySelectorAll('#walkingOptions .btn-secondary').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                selectedMovementSubtype = e.target.dataset.subtype;
-            });
-        });
-
-        document.querySelectorAll('#cyclingOptions .btn-secondary').forEach(button => {
-            button.addEventListener('click', (e) => {
-                document.querySelectorAll('#cyclingOptions .btn-secondary').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                selectedMovementSubtype = e.target.dataset.subtype;
-            });
-        });
-
-        // Initialize default active subtype buttons
-        document.querySelector('#walkingOptions .btn-secondary[data-subtype="walk"]').classList.add('active');
-        document.querySelector('#cyclingOptions .btn-secondary[data-subtype="balanced"]').classList.add('active');
-
-
-        // --- Tab Switching Logic ---
-        document.getElementById('tabRecentRoutes').addEventListener('click', () => {
-            switchTab('recentRoutes');
-        });
-        document.getElementById('tabFavoriteRoutes').addEventListener('click', () => {
-            switchTab('favoriteRoutes');
-        });
-        document.getElementById('tabRecommendedRoutes').addEventListener('click', () => {
-            switchTab('recommendedRoutes');
-        });
-        document.getElementById('tabRanking').addEventListener('click', () => {
-            switchTab('ranking');
-        });
-
-        function switchTab(activeTabId) {
-            const tabs = ['recentRoutes', 'favoriteRoutes', 'recommendedRoutes', 'ranking'];
-            tabs.forEach(tab => {
-                const tabButton = document.getElementById(`tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
-                const tabContent = document.getElementById(`${tab}Content`);
-
-                if (tab === activeTabId) {
-                    tabButton.classList.add('active');
-                    tabContent.classList.remove('hidden');
-                } else {
-                    tabButton.classList.remove('active');
-                    tabContent.classList.add('hidden');
-                }
-            });
+            }, 2000); // Обновление каждые 2 секунды
         }
 
-        // Initial load of Google Maps script
-        loadGoogleMapsScript();
+        // Остановка отслеживания маршрута
+        function stopTracking() {
+            if (!trackingActive) return;
+            
+            trackingActive = false;
+            clearInterval(trackingInterval);
+            
+            // Обновление интерфейса
+            document.querySelector('.control-button.start .control-icon').classList.remove('pulse');
+            
+            // Сохранение маршрута в Firebase
+            saveRouteToFirebase();
+        }
 
-        // Check URL for shared route
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedRouteId = urlParams.get('routeId');
-            const sharedUserId = urlParams.get('userId');
+        // Обновление статистики
+        function updateStats() {
+            if (!startTime) return;
+            
+            const now = new Date();
+            const elapsedTime = Math.floor((now - startTime) / 1000); // в секундах
+            const hours = Math.floor(elapsedTime / 3600);
+            const minutes = Math.floor((elapsedTime % 3600) / 60);
+            const seconds = elapsedTime % 60;
+            
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const avgSpeed = distance / (elapsedTime / 3600) || 0;
+            const pace = elapsedTime / (distance * 60) || 0; // минут на километр
+            const paceMinutes = Math.floor(pace);
+            const paceSeconds = Math.floor((pace - paceMinutes) * 60);
+            
+            document.getElementById('distance').textContent = distance.toFixed(2) + ' км';
+            document.getElementById('time').textContent = timeStr;
+            document.getElementById('speed').textContent = avgSpeed.toFixed(1) + ' км/ч';
+            document.getElementById('pace').textContent = `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}/км`;
+        }
 
-            if (sharedRouteId && sharedUserId) {
-                showGlobalMessage(`Попытка загрузить общий маршрут ID: ${sharedRouteId} от пользователя: ${sharedUserId}.`);
-                // In a real app, you'd fetch this route from the sharedUserId's public routes
-                // (or a dedicated public sharing collection).
-                // For this demo, we can't directly access another user's private routes.
-                // This would require a public 'shared_routes' collection or Cloud Functions.
-                // As a fallback, we'll just show a message.
-                showGlobalMessage("Функция просмотра общего маршрута в этой демонстрации ограничена из-за правил безопасности Firebase. В реальном приложении для этого требуется публичная коллекция маршрутов.");
-            }
-        });
-
+        // Сохранение маршрута в Firebase
+        function saveRouteToFirebase() {
+            if (!currentUser) return;
+            
+            const path = routePath.getPath().getArray().map(point => {
+                return { lat: point.lat(), lng: point.lng() };
+            });
+            
+            const routeData = {
+                userId: currentUser.login,
+                userName: currentUser.name,
+                distance: distance,
+                duration: Math.floor((new Date() - startTime) / 1000),
+                path: path,
+                transportType: "Велосипед (Сбалансированный)",
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            db.collection("routes").add(routeData)
+                .then(docRef => {
+                    console.log("Маршрут сохранен с ID:", docRef.id);
+                    alert("Маршрут успешно сохранен!");
+                })
+                .catch(error => {
+                    console.error("Ошибка при сохранении маршрута:", error);
+                    alert("Ошибка при сохранении маршрута!");
+                });
+        }
     </script>
 </body>
 </html>
