@@ -6,10 +6,22 @@
     <title>SprintTrack - Отслеживайте свои маршруты</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comfortaa:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0&libraries=places,geometry&callback=initMap" async defer></script>
+    <!-- Google Maps API -->
+    <!-- Removed callback=initMap to ensure initMap is called after DOMContentLoaded -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA-1e8Lc2h93OtiUMT3jLDJnIHeOYIYTh0&libraries=places,geometry" async defer></script>
+    <!-- NOTE: RefererNotAllowedMapError means your Google Maps API key is restricted to specific domains. -->
+    <!-- To fix this, go to Google Cloud Console -> APIs & Services -> Credentials. -->
+    <!-- Edit your API key, and under "Application restrictions", add "HTTP referrers (web sites)". -->
+    <!-- Then, add your current site URL from the error message. -->
+    <!-- The specific URL from your error message is: blob:https://0hp75g8o16dd253wg9ammow1knwapwqh4tg5t1b9igkw1kj9rg-h783343146.scf.usercontent.goog/86fbd015-92f3-4fc3-bd0b-20d78eb8bc28 -->
+    <!-- You MUST add the origin with a wildcard for all paths to your Google Maps API key's HTTP referrers: -->
+    <!-- https://0hp75g8o16dd253wg9ammow1knwapwqh4tg5t1b9igkw1kj9rg-h783343146.scf.usercontent.goog/* -->
+    <!-- Or, if you prefer to allow all subdomains and paths for this specific domain, use a wildcard like: *.scf.usercontent.goog/* -->
+    <!-- This is a configuration step outside of the code itself. -->
     <style>
         :root {
             --primary: #4CAF50;
@@ -26,6 +38,9 @@
             --success: #4CAF50;
             --warning: #FF9800;
             --error: #F44336;
+            --elevation-1: 0 2px 10px rgba(0,0,0,0.1);
+            --elevation-2: 0 4px 12px rgba(0,0,0,0.15);
+            --elevation-3: 0 6px 20px rgba(0,0,0,0.15);
         }
 
         * {
@@ -49,7 +64,7 @@
             transition: all 0.3s ease;
         }
 
-        /* Шапка */
+        /* Header styles */
         .app-header {
             display: flex;
             justify-content: space-between;
@@ -57,7 +72,7 @@
             padding: 15px 20px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             color: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: var(--elevation-1);
             z-index: 100;
         }
 
@@ -80,10 +95,10 @@
         .menu-toggle {
             font-size: 1.5rem;
             cursor: pointer;
-            display: none;
+            display: none; /* Hidden by default on desktop */
         }
 
-        /* Стили для боковой панели */
+        /* Sidebar styles */
         .sidebar {
             width: 320px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
@@ -95,9 +110,9 @@
             z-index: 90;
             overflow-y: auto;
             transition: transform 0.3s ease;
-            position: fixed;
-            height: calc(100vh - 60px);
-            top: 60px;
+            position: fixed; /* Fixed position for mobile slide-out */
+            height: calc(100vh - 60px); /* Adjust for header height */
+            top: 60px; /* Position below header */
             left: 0;
         }
 
@@ -214,14 +229,15 @@
             font-weight: 600;
         }
 
-        /* Стили для основной области карты */
+        /* Main map area styles */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             position: relative;
-            margin-left: 320px;
             height: calc(100vh - 60px);
+            margin-left: 320px; /* Default for desktop */
+            transition: margin-left 0.3s ease; /* Smooth transition for sidebar toggle */
         }
 
         #map {
@@ -238,15 +254,18 @@
             z-index: 2;
             display: flex;
             justify-content: space-between;
+            align-items: flex-start; /* Align items to the start for better stacking on mobile */
+            flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+            gap: 15px; /* Spacing between search box and action buttons */
         }
 
         .search-box {
-            width: 100%;
-            max-width: 400px;
+            width: 100%; /* Full width on smaller screens */
+            max-width: 400px; /* Max width for larger screens */
             background-color: var(--card);
             padding: 12px 20px;
             border-radius: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: var(--elevation-2);
             display: flex;
             align-items: center;
         }
@@ -268,6 +287,7 @@
         .action-buttons {
             display: flex;
             gap: 12px;
+            /* On mobile, these might need to be repositioned or stacked */
         }
 
         .action-button {
@@ -278,7 +298,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: var(--elevation-2);
             cursor: pointer;
             transition: all 0.2s;
             font-size: 20px;
@@ -301,7 +321,10 @@
             background-color: var(--card);
             padding: 15px 25px;
             border-radius: 30px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            box-shadow: var(--elevation-3);
+            flex-wrap: wrap; /* Allow buttons to wrap */
+            justify-content: center; /* Center buttons when wrapped */
+            max-width: 90%; /* Limit width for smaller screens */
         }
 
         .control-button {
@@ -347,16 +370,19 @@
             width: 280px;
             background-color: var(--card);
             border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            box-shadow: var(--elevation-3);
             z-index: 2;
+            transition: all 0.3s ease;
+            overflow: hidden;
         }
 
         .stats-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            padding: 15px 20px;
+            cursor: pointer;
+            background-color: var(--card);
         }
 
         .stats-title {
@@ -365,10 +391,24 @@
             color: var(--primary);
         }
 
+        .stats-actions {
+            display: flex;
+            gap: 10px;
+        }
+
         .stats-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+            padding: 0 20px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stats-panel.collapsed .stats-content {
+            height: 0;
+            padding: 0 20px;
+            opacity: 0;
+            overflow: hidden;
         }
 
         .stat-item {
@@ -387,7 +427,15 @@
             color: var(--text-light);
         }
 
-        /* Стили для экрана входа */
+        .collapse-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .stats-panel.collapsed .collapse-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Login screen styles */
         .login-container {
             position: fixed;
             top: 0;
@@ -482,7 +530,173 @@
             color: var(--text-light);
         }
 
-        /* Стили для анимаций и состояний */
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 25px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        .route-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .route-item {
+            background-color: var(--background);
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .route-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .route-name {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .route-info {
+            display: flex;
+            gap: 15px;
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .route-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .route-action {
+            padding: 6px 12px;
+            background-color: var(--primary);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .route-action:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .route-action.add-favorite {
+            background-color: var(--secondary);
+        }
+
+        .route-action.add-favorite:hover {
+            background-color: var(--secondary-light);
+        }
+
+        .share-options {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .share-option {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .share-option:hover {
+            transform: scale(1.1);
+        }
+
+        .whatsapp { background-color: #25D366; }
+        .telegram { background-color: #0088cc; }
+        .vk { background-color: #4a76a8; }
+        .messenger { background-color: #006AFF; }
+
+        /* AI Loading Indicator */
+        .loading-overlay {
+            display: none; /* Hidden by default */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 100;
+            border-radius: 16px;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 15px;
+            font-size: 16px;
+            color: var(--text-light);
+        }
+
+        /* Animation and state styles */
         .hidden {
             display: none;
         }
@@ -533,15 +747,68 @@
             margin-bottom: 20px;
         }
 
-        /* Адаптивные стили */
+        /* Responsive styles */
+        /* Default styles for desktop (larger screens) */
+        .menu-toggle {
+            display: none; /* Hide menu toggle on desktop */
+        }
+
+        .sidebar {
+            position: fixed; /* Keep sidebar fixed on desktop */
+            transform: translateX(0); /* Always visible on desktop */
+            height: calc(100vh - 60px);
+            top: 60px;
+            left: 0;
+        }
+
+        .main-content {
+            margin-left: 320px; /* Space for sidebar on desktop */
+        }
+
+        .map-overlay {
+            flex-direction: row; /* Horizontal layout on desktop */
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .search-box {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .action-buttons {
+            position: static; /* Reset position for desktop */
+            top: auto;
+            right: auto;
+        }
+
+        .tracking-controls {
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            flex-wrap: nowrap; /* No wrapping on desktop */
+            gap: 20px;
+            max-width: none;
+        }
+
+        .stats-panel {
+            bottom: 40px;
+            right: 20px;
+            width: 280px;
+        }
+
+        /* Tablet and smaller desktop screens */
         @media (max-width: 1024px) {
             .sidebar {
                 width: 280px;
             }
             
+            .main-content {
+                margin-left: 280px; /* Adjust margin for smaller sidebar */
+            }
+            
             .stats-panel {
                 width: 240px;
-                padding: 15px;
             }
             
             .stat-value {
@@ -549,74 +816,60 @@
             }
         }
 
+        /* Mobile screens */
         @media (max-width: 768px) {
             .menu-toggle {
-                display: block;
+                display: block; /* Show menu toggle on mobile */
             }
             
             .sidebar {
-                transform: translateX(-100%);
+                transform: translateX(-100%); /* Hide sidebar by default on mobile */
+                width: 250px; /* Smaller sidebar width on mobile */
+                box-shadow: 4px 0 15px rgba(0,0,0,0.2); /* Stronger shadow for slide-out effect */
             }
             
             .sidebar.active {
-                transform: translateX(0);
+                transform: translateX(0); /* Show sidebar when active */
             }
             
             .main-content {
-                margin-left: 0;
+                margin-left: 0; /* No margin when sidebar is hidden on mobile */
             }
             
             .map-overlay {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
+                flex-direction: column; /* Stack search box and buttons vertically */
+                align-items: center; /* Center items in column layout */
+                top: 15px; /* Adjust top padding */
+                left: 15px;
+                right: 15px;
             }
             
             .search-box {
-                max-width: 100%;
+                width: 100%; /* Ensure full width */
+                margin-bottom: 15px; /* Space between search and buttons */
             }
             
             .action-buttons {
-                position: absolute;
-                top: 70px;
-                right: 20px;
+                position: static; /* Reset position for mobile */
+                top: auto;
+                right: auto;
+                width: 100%; /* Take full width to center buttons if needed */
+                justify-content: center; /* Center action buttons */
             }
             
             .tracking-controls {
-                bottom: 100px;
-                flex-wrap: wrap;
-                justify-content: center;
-                max-width: 90%;
-            }
-            
-            .stats-panel {
-                bottom: 20px;
-                left: 20px;
-                right: 20px;
-                width: auto;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .app-header {
-                padding: 12px 15px;
-            }
-            
-            .logo h1 {
-                font-size: 1.3rem;
-            }
-            
-            .tracking-controls {
-                gap: 10px;
-                padding: 12px 15px;
+                bottom: 20px; /* Move controls up a bit */
+                padding: 12px 15px; /* Smaller padding */
+                gap: 10px; /* Smaller gap between buttons */
+                max-width: 95%; /* More width for controls */
             }
             
             .control-button {
-                min-width: 60px;
+                min-width: 60px; /* Slightly smaller button width */
             }
             
             .control-icon {
-                width: 50px;
+                width: 50px; /* Smaller icon size */
                 height: 50px;
                 font-size: 20px;
             }
@@ -625,14 +878,471 @@
                 font-size: 12px;
             }
             
-            .transport-options {
-                grid-template-columns: 1fr;
+            .stats-panel {
+                bottom: 15px; /* Adjust position for mobile */
+                left: 15px;
+                right: 15px;
+                width: auto; /* Allow panel to take full available width */
             }
+
+            .modal-content {
+                width: 95%; /* Wider modals on smaller screens */
+                padding: 20px; /* Adjust modal padding */
+            }
+        }
+
+        /* Very small mobile screens (e.g., iPhone SE) */
+        @media (max-width: 480px) {
+            .app-header {
+                padding: 10px 15px; /* Smaller header padding */
+            }
+            
+            .logo h1 {
+                font-size: 1.2rem; /* Smaller logo text */
+            }
+            
+            .logo-icon {
+                font-size: 1.5rem; /* Smaller logo icon */
+            }
+
+            .sidebar {
+                width: 100%; /* Full width sidebar for very small screens */
+            }
+
+            .map-overlay {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                gap: 10px;
+            }
+
+            .search-box {
+                padding: 10px 15px; /* Smaller search box padding */
+                font-size: 14px;
+            }
+
+            .action-button {
+                width: 45px; /* Smaller action buttons */
+                height: 45px;
+                font-size: 18px;
+            }
+            
+            .tracking-controls {
+                bottom: 10px; /* Even higher position for controls */
+                padding: 10px 10px;
+                gap: 5px;
+            }
+            
+            .control-button {
+                min-width: 50px; /* Smallest button width */
+            }
+            
+            .control-icon {
+                width: 40px; /* Smallest icon size */
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            .control-label {
+                font-size: 10px;
+            }
+            
+            .transport-options {
+                grid-template-columns: 1fr; /* Stack transport options vertically */
+            }
+
+            .stats-panel {
+                bottom: 10px;
+                left: 10px;
+                right: 10px;
+            }
+
+            .stat-value {
+                font-size: 20px; /* Keep stats values readable */
+            }
+
+            .stat-label {
+                font-size: 12px;
+            }
+
+            .modal-content {
+                padding: 15px; /* Smaller modal padding */
+            }
+
+            .modal-title {
+                font-size: 20px;
+            }
+        }
+
+        /* Styles for placeholder modals */
+        .modal-content h2 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+
+        .modal-content p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .leaderboard-table th, .leaderboard-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .leaderboard-table th {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .leaderboard-table tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .leaderboard-table tr:hover {
+            background-color: #ddd;
+        }
+
+        .achievement-item {
+            background-color: var(--background);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .achievement-item i {
+            font-size: 20px;
+            color: var(--accent);
+        }
+
+        .achievement-item.completed i {
+            color: var(--success);
+        }
+
+        .achievement-title {
+            font-weight: 600;
+        }
+
+        .achievement-description {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .progress-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: var(--background);
+            border-radius: 12px;
+        }
+
+        .progress-section h3 {
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%; /* Will be set by JS */
+            border-radius: 5px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .friend-item {
+            background-color: var(--background);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .friend-item .user-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+        }
+
+        .friend-info {
+            flex-grow: 1;
+        }
+
+        .friend-name {
+            font-weight: 600;
+        }
+
+        .friend-status {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .add-friend-input {
+            width: calc(100% - 70px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-right: 10px;
+        }
+
+        .add-friend-btn {
+            padding: 10px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .discussion-topic {
+            background-color: var(--background);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .discussion-topic:hover {
+            background-color: #e9ecef;
+        }
+
+        .topic-title {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .topic-info {
+            font-size: 13px;
+            color: var(--text-light);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .create-topic-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        /* Styles for Workout Plan Modal */
+        .workout-plan-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .workout-plan-form label {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .workout-plan-form input[type="text"],
+        .workout-plan-form select,
+        .workout-plan-form input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .generate-plan-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .generate-plan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .workout-plan-output {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .workout-plan-output h3 {
+            color: var(--primary-dark);
+            margin-bottom: 15px;
+        }
+
+        .workout-day {
+            background-color: var(--background);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: var(--elevation-1);
+        }
+
+        .workout-day h4 {
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .workout-day p {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        /* Chat Modal Styles */
+        #discussionsModal .modal-content {
+            display: flex;
+            flex-direction: column;
+            height: 90vh; /* Make chat modal taller */
+            max-height: 90vh;
+        }
+
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: var(--background);
+        }
+
+        .chat-message {
+            background-color: var(--card);
+            padding: 10px 15px;
+            border-radius: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            max-width: 80%;
+        }
+
+        .chat-message.own {
+            align-self: flex-end;
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        .chat-message.other {
+            align-self: flex-start;
+            background-color: #e0e0e0;
+            color: var(--text);
+        }
+
+        .message-sender {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 3px;
+            opacity: 0.8;
+        }
+
+        .message-text {
+            font-size: 15px;
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--text-light);
+            text-align: right;
+            margin-top: 5px;
+            opacity: 0.7;
+        }
+
+        .chat-input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-area input {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .chat-input-area button {
+            padding: 10px 20px;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .chat-input-area button:hover {
+            background-color: var(--accent-light);
+        }
+
+        /* Recommended Routes specific styles */
+        #recommendedRoutesModal .modal-content {
+            max-width: 600px; /* Make it wider for location input */
+        }
+
+        .recommended-location-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .recommended-location-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .recommended-location-input button {
+            padding: 10px 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <!-- Экран входа -->
+    <!-- Login screen -->
     <div class="login-container" id="loginContainer">
         <div class="login-box slide-in">
             <div class="login-logo">
@@ -641,12 +1351,12 @@
             </div>
             <form class="login-form" id="loginForm">
                 <div class="input-group">
-                    <label for="username">Логин</label>
-                    <input type="text" id="username" placeholder="Введите ваш логин" required>
+                    <label for="loginUsername">Логин</label>
+                    <input type="text" id="loginUsername" placeholder="Введите ваш логин" required>
                 </div>
                 <div class="input-group">
-                    <label for="password">Пароль</label>
-                    <input type="password" id="password" placeholder="Введите ваш пароль" required>
+                    <label for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" placeholder="Введите ваш пароль" required>
                 </div>
                 <button type="submit" class="login-button">Войти</button>
             </form>
@@ -656,9 +1366,9 @@
         </div>
     </div>
 
-    <!-- Основной интерфейс приложения -->
+    <!-- Main application interface -->
     <div class="app-container hidden" id="appContainer">
-        <!-- Шапка -->
+        <!-- Header -->
         <div class="app-header">
             <div class="logo">
                 <div class="logo-icon"><i class="fas fa-bicycle"></i></div>
@@ -669,7 +1379,7 @@
             </div>
         </div>
 
-        <!-- Боковая панель -->
+        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="user-profile">
                 <div class="user-avatar" id="userAvatar">R</div>
@@ -683,14 +1393,26 @@
                 <div class="section-title">
                     <i class="fas fa-chart-line"></i> Статистика
                 </div>
-                <div class="nav-item active">
+                <div class="nav-item active" id="currentRouteBtn">
                     <i class="fas fa-route"></i> Текущий маршрут
                 </div>
-                <div class="nav-item">
+                 <div class="nav-item" id="latestRoutesBtn">
+                    <i class="fas fa-history"></i> Последние маршруты
+                </div>
+                <div class="nav-item" id="achievementsBtn">
                     <i class="fas fa-trophy"></i> Мои достижения
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" id="progressBtn">
                     <i class="fas fa-chart-bar"></i> Прогресс
+                </div>
+                <div class="nav-item" id="favoriteRoutesBtn">
+                    <i class="fas fa-star"></i> Избранное
+                </div>
+                <div class="nav-item" id="recommendedRoutesBtn">
+                    <i class="fas fa-thumbs-up"></i> Рекомендуемые
+                </div>
+                <div class="nav-item" id="workoutPlanBtn">
+                    <i class="fas fa-dumbbell"></i> План тренировок ✨
                 </div>
             </div>
 
@@ -698,41 +1420,28 @@
                 <div class="section-title">
                     <i class="fas fa-users"></i> Сообщество
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" id="ratingBtn">
                     <i class="fas fa-medal"></i> Рейтинг
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" id="friendsBtn">
                     <i class="fas fa-user-friends"></i> Друзья
                 </div>
-                <div class="nav-item">
+                <div class="nav-item" id="discussionsBtn">
                     <i class="fas fa-comments"></i> Обсуждения
                 </div>
             </div>
 
-            <div class="nav-section">
-                <div class="section-title">
-                    <i class="fas fa-cog"></i> Настройки
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-lock"></i> Безопасность
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-bell"></i> Уведомления
-                </div>
-                <div class="nav-item">
-                    <i class="fas fa-globe"></i> Язык
-                </div>
-            </div>
+            <!-- Removed "Настройки" section as requested -->
 
             <div class="transport-type">
                 <div class="transport-title">
                     <i class="fas fa-walking"></i> Пешком
                 </div>
                 <div class="transport-options">
-                    <div class="transport-option">Спринт</div>
-                    <div class="transport-option">Ходьба</div>
-                    <div class="transport-option active">Бег</div>
-                    <div class="transport-option">Хайкинг</div>
+                    <div class="transport-option" data-type="sprint">Спринт</div>
+                    <div class="transport-option" data-type="walking">Ходьба</div>
+                    <div class="transport-option active" data-type="running">Бег</div>
+                    <div class="transport-option" data-type="hiking">Хайкинг</div>
                 </div>
             </div>
 
@@ -741,19 +1450,19 @@
                     <i class="fas fa-bicycle"></i> Велосипед
                 </div>
                 <div class="transport-options">
-                    <div class="transport-option active">Сбалансированный</div>
-                    <div class="transport-option">Самый короткий</div>
-                    <div class="transport-option">Велодорожки</div>
-                    <div class="transport-option">Популярные</div>
-                    <div class="transport-option">E-bike</div>
-                    <div class="transport-option">Плавная езда</div>
-                    <div class="transport-option">Шоссейный</div>
-                    <div class="transport-option">Горный</div>
+                    <div class="transport-option" data-type="balanced">Сбалансированный</div>
+                    <div class="transport-option" data-type="shortest">Самый короткий</div>
+                    <div class="transport-option" data-type="bikelanes">Велодорожки</div>
+                    <div class="transport-option" data-type="popular">Популярные</div>
+                    <div class="transport-option" data-type="ebike">E-bike</div>
+                    <div class="transport-option" data-type="smooth">Плавная езда</div>
+                    <div class="transport-option" data-type="road">Шоссейный</div>
+                    <div class="transport-option" data-type="mountain">Горный</div>
                 </div>
             </div>
         </div>
 
-        <!-- Основное содержимое -->
+        <!-- Main content area -->
         <div class="main-content">
             <div id="map">
                 <div class="map-error" id="mapError">
@@ -766,42 +1475,39 @@
             
             <div class="map-overlay">
                 <div class="search-box">
-                    <input type="text" placeholder="Поиск мест или адресов...">
-                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Поиск мест или адресов...">
+                    <i class="fas fa-search" id="searchBtn"></i>
                 </div>
                 <div class="action-buttons">
-                    <div class="action-button">
+                    <div class="action-button" id="currentLocationBtn">
                         <i class="fas fa-location-arrow"></i>
                     </div>
-                    <div class="action-button">
+                    <div class="action-button" id="mapTypeBtn">
                         <i class="fas fa-map-marked-alt"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-star"></i>
                     </div>
                 </div>
             </div>
 
             <div class="tracking-controls">
-                <div class="control-button">
+                <div class="control-button" id="routeBackBtn">
                     <div class="control-icon">
                         <i class="fas fa-step-backward"></i>
                     </div>
                     <div class="control-label">Назад</div>
                 </div>
-                <div class="control-button start">
+                <div class="control-button start" id="startTrackingBtn">
                     <div class="control-icon pulse">
                         <i class="fas fa-play"></i>
                     </div>
                     <div class="control-label">Старт</div>
                 </div>
-                <div class="control-button stop">
+                <div class="control-button stop" id="stopTrackingBtn">
                     <div class="control-icon">
                         <i class="fas fa-stop"></i>
                     </div>
                     <div class="control-label">Стоп</div>
                 </div>
-                <div class="control-button">
+                <div class="control-button" id="routeForwardBtn">
                     <div class="control-icon">
                         <i class="fas fa-step-forward"></i>
                     </div>
@@ -809,11 +1515,17 @@
                 </div>
             </div>
 
-            <div class="stats-panel">
-                <div class="stats-header">
+            <!-- Stats panel with collapse functionality -->
+            <div class="stats-panel" id="statsPanel">
+                <div class="stats-header" id="statsHeader">
                     <div class="stats-title">Статистика</div>
-                    <div class="action-button">
-                        <i class="fas fa-chart-line"></i>
+                    <div class="stats-actions">
+                        <div class="action-button" id="shareBtn">
+                            <i class="fas fa-share-alt"></i>
+                        </div>
+                        <div class="action-button" id="collapseStatsBtn">
+                            <i class="fas fa-chevron-up collapse-icon"></i>
+                        </div>
                     </div>
                 </div>
                 <div class="stats-content">
@@ -838,31 +1550,273 @@
         </div>
     </div>
 
-    <script>
-        // Конфигурация Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBaO6MfwDB0CCgvDto7VmHgJxN_e-ZsIgE",
-            authDomain: "sprinttrack-941b5.firebaseapp.com",
-            projectId: "sprinttrack-941b5",
-            storageBucket: "sprinttrack-941b5.firebasestorage.app",
-            messagingSenderId: "235437842194",
-            appId: "1:235437842194:web:a8c47588fac613503a1dcb",
-            measurementId: "G-SQ2TE2V5D3"
-        };
+    <!-- Modals -->
+    <div class="modal" id="latestRoutesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Последние маршруты</div>
+                <div class="close-modal" data-modal="latestRoutesModal">&times;</div>
+            </div>
+            <div class="route-list" id="latestRoutesList">
+                <!-- Routes will be loaded dynamically here -->
+                <p style="text-align: center; color: var(--text-light);">Последние маршруты не найдены.</p>
+            </div>
+        </div>
+    </div>
 
-        // Инициализация Firebase
-        firebase.initializeApp(firebaseConfig);
+    <div class="modal" id="favoriteRoutesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Избранные маршруты</div>
+                <div class="close-modal" data-modal="favoriteRoutesModal">&times;</div>
+            </div>
+            <div class="route-list" id="favoriteRoutesList">
+                 <!-- Favorite routes will be loaded dynamically here -->
+                <p style="text-align: center; color: var(--text-light);">Избранные маршруты не найдены.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="recommendedRoutesModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Рекомендуемые маршруты</div>
+                <div class="close-modal" data-modal="recommendedRoutesModal">&times;</div>
+            </div>
+            <div class="recommended-location-input">
+                <input type="text" id="recommendedLocationInput" placeholder="Введите адрес или город" value="Шымкент">
+                <button id="generateLocationRecommendedRoutesBtn">Сгенерировать</button>
+            </div>
+            <div class="loading-overlay" id="recommendedRoutesLoading">
+                <div class="spinner"></div>
+                <div class="loading-text">Генерируем маршруты с помощью ИИ...</div>
+            </div>
+            <div class="route-list" id="recommendedRoutesList">
+                <!-- Recommended routes will be loaded dynamically here -->
+                <p style="text-align: center; color: var(--text-light);">Рекомендуемые маршруты не найдены.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Поделиться маршрутом</div>
+                <div class="close-modal" data-modal="shareModal">&times;</div>
+            </div>
+            <div class="share-options">
+                <div class="share-option whatsapp" id="shareWhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <div class="share-option telegram" id="shareTelegram">
+                    <i class="fab fa-telegram"></i>
+                </div>
+                <div class="share-option vk" id="shareVK">
+                    <i class="fab fa-vk"></i>
+                </div>
+                <div class="share-option messenger" id="shareMessenger">
+                    <i class="fab fa-facebook-messenger"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Updated placeholder modals for other sections -->
+    <div class="modal" id="achievementsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Мои достижения</div>
+                <div class="close-modal" data-modal="achievementsModal">&times;</div>
+            </div>
+            <p>Отслеживайте свои успехи и получайте награды за достижения!</p>
+            <div class="achievements-list" id="achievementsList">
+                <!-- Achievements will be loaded dynamically here -->
+            </div>
+            <button class="create-topic-btn" id="claimAchievementBtn">Заявить о достижении</button>
+        </div>
+    </div>
+
+    <div class="modal" id="progressModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Прогресс</div>
+                <div class="close-modal" data-modal="progressModal">&times;</div>
+            </div>
+            <p>Здесь вы сможете отслеживать свой прогресс по ключевым показателям.</p>
+            <div class="progress-section">
+                <h3>Дистанция за месяц</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="monthlyDistanceProgress" style="width: 0%;"></div>
+                </div>
+                <p style="font-size: 14px; text-align: right; margin-top: 5px;" id="monthlyDistanceText">0 км из 0 км</p>
+            </div>
+            <div class="progress-section">
+                <h3>Общая дистанция</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="totalDistanceProgress" style="width: 0%;"></div>
+                </div>
+                <p style="font-size: 14px; text-align: right; margin-top: 5px;" id="totalDistanceText">0 км</p>
+            </div>
+            <p>Подробные графики и отчеты будут доступны здесь.</p>
+            <button class="create-topic-btn" onclick="alert('Показать подробный отчет (функционал в разработке)')">Показать подробный отчет</button>
+        </div>
+    </div>
+
+    <div class="modal" id="ratingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Рейтинг</div>
+                <div class="close-modal" data-modal="ratingModal">&times;</div>
+            </div>
+            <p>Сравните свои результаты с другими пользователями SprintTrack!</p>
+            <div class="loading-overlay" id="ratingLoading">
+                <div class="spinner"></div>
+                <div class="loading-text">Загружаем рейтинг...</div>
+            </div>
+            <table class="leaderboard-table" id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th>Место</th>
+                        <th>Пользователь</th>
+                        <th>Дистанция (км)</th>
+                        <th>Время (ч)</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboardBody">
+                    <!-- Leaderboard data will be loaded here -->
+                </tbody>
+            </table>
+            <button class="create-topic-btn" onclick="loadLeaderboard()">Обновить рейтинг</button>
+        </div>
+    </div>
+
+    <div class="modal" id="friendsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Друзья</div>
+                <div class="close-modal" data-modal="friendsModal">&times;</div>
+            </div>
+            <p>Находите и добавляйте друзей, чтобы делиться своими маршрутами!</p>
+            <div style="display: flex; margin-bottom: 20px;">
+                <input type="text" placeholder="Имя друга или ID" class="add-friend-input" id="friendIdInput">
+                <button class="add-friend-btn" id="addFriendBtn">Добавить</button>
+            </div>
+            <h3>Ваши друзья:</h3>
+            <div class="loading-overlay" id="friendsLoading">
+                <div class="spinner"></div>
+                <div class="loading-text">Загружаем друзей...</div>
+            </div>
+            <div class="friends-list" id="friendsList">
+                <!-- Friends will be loaded here -->
+                <p style="text-align: center; color: var(--text-light);">Друзья не найдены.</p>
+            </div>
+            <button class="create-topic-btn" onclick="loadFriends()">Обновить список друзей</button>
+        </div>
+    </div>
+
+    <div class="modal" id="discussionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Обсуждения</div>
+                <div class="close-modal" data-modal="discussionsModal">&times;</div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Chat messages will be loaded here -->
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatMessageInput" placeholder="Введите сообщение...">
+                <button id="sendChatMessageBtn">Отправить</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Workout Plan Modal -->
+    <div class="modal" id="workoutPlanModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">План тренировок ✨</div>
+                <div class="close-modal" data-modal="workoutPlanModal">&times;</div>
+            </div>
+            <p>Сгенерируйте персонализированный план тренировок с помощью ИИ!</p>
+            <div class="workout-plan-form">
+                <div class="input-group">
+                    <label for="workoutGoal">Моя цель:</label>
+                    <input type="text" id="workoutGoal" placeholder="Например: пробежать 5 км, улучшить выносливость" value="пробежать 5 км">
+                </div>
+                <div class="input-group">
+                    <label for="fitnessLevel">Мой уровень подготовки:</label>
+                    <select id="fitnessLevel">
+                        <option value="новичок">Новичок</option>
+                        <option value="средний">Средний</option>
+                        <option value="продвинутый">Продвинутый</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="planDuration">Продолжительность плана (недели):</label>
+                    <input type="number" id="planDuration" value="4" min="1" max="12">
+                </div>
+                <button class="generate-plan-btn" id="generateWorkoutPlanBtn">Сгенерировать план</button>
+            </div>
+            <div class="loading-overlay" id="workoutPlanLoading">
+                <div class="spinner"></div>
+                <div class="loading-text">ИИ генерирует ваш план тренировок...</div>
+            </div>
+            <div class="workout-plan-output" id="workoutPlanOutput">
+                <!-- AI generated plan will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // Firebase configuration (will be replaced by Canvas runtime variables)
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // Пользователи (в реальном приложении хранится на сервере)
-        const users = [
+        let currentUserId = null; // Firebase User ID
+        let currentUserName = null; // User's display name
+
+        // Authenticate anonymously or with custom token
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUserId = user.uid;
+                console.log("Firebase authenticated. User ID:", currentUserId);
+            } else {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    try {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                        currentUserId = auth.currentUser.uid;
+                        console.log("Signed in with custom token. User ID:", currentUserId);
+                    } catch (error) {
+                        console.error("Error signing in with custom token:", error);
+                        // Fallback to anonymous if custom token fails
+                        await auth.signInAnonymously();
+                        currentUserId = auth.currentUser.uid;
+                        console.log("Signed in anonymously after custom token failure. User ID:", currentUserId);
+                    }
+                } else {
+                    await auth.signInAnonymously();
+                    currentUserId = auth.currentUser.uid;
+                    console.log("Signed in anonymously. User ID:", currentUserId);
+                }
+            }
+            // After authentication, set up user profile and load initial data
+            setupUserProfile();
+        });
+
+        // Users (for demo login, in a real app, these would be managed by Firebase Auth)
+        const demoUsers = [
             { login: "Renard", password: "121212", name: "Renard", level: "Профессионал" },
             { login: "Alex", password: "123456", name: "Alex", level: "Продвинутый" },
             { login: "Maria", password: "qwerty", name: "Maria", level: "Новичок" }
         ];
 
-        // Переменные приложения
+        // Application variables
         let map;
         let currentPositionMarker;
         let routePath;
@@ -871,72 +1825,251 @@
         let startTime;
         let distance = 0;
         let lastPosition = null;
-        let currentUser = null;
         let mapError = false;
+        let currentRoute = null; // Route currently being tracked or just completed/selected
+        let currentTransportType = "running"; // Default selected transport type
+        let latestRoutes = []; // Locally stored last 5-6 routes
+        let favoriteRoutes = []; // Loaded from Firebase
+        let recommendedRoutes = []; // Loaded from Firebase or predefined/AI-generated
+        let mapTypes = ['roadmap', 'satellite', 'hybrid', 'terrain'];
+        let currentMapTypeIndex = 1; // Start with satellite view
+        let statsCollapsed = false; // Stats panel state
+        let currentPolyline = null; // For displaying a route when "Repeat" is clicked
 
-        // Инициализация приложения
+        // Application initialization on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Проверка авторизации
+            // Login form submission handler
             const loginForm = document.getElementById('loginForm');
             loginForm.addEventListener('submit', handleLogin);
             
-            // Переключение меню на мобильных устройствах
+            // Mobile menu toggle
             document.getElementById('menuToggle').addEventListener('click', function() {
                 document.getElementById('sidebar').classList.toggle('active');
             });
             
-            // Анонимная аутентификация для Firebase
-            auth.signInAnonymously()
-                .then(() => {
-                    console.log("Анонимная аутентификация выполнена");
-                })
-                .catch(error => {
-                    console.error("Ошибка анонимной аутентификации:", error);
+            // Button handlers
+            document.getElementById('startTrackingBtn').addEventListener('click', startTracking);
+            document.getElementById('stopTrackingBtn').addEventListener('click', stopTracking);
+            document.getElementById('currentLocationBtn').addEventListener('click', centerMap);
+            document.getElementById('mapTypeBtn').addEventListener('click', toggleMapType);
+            document.getElementById('shareBtn').addEventListener('click', showShareModal);
+            
+            // Route list buttons
+            document.getElementById('latestRoutesBtn').addEventListener('click', showLatestRoutes);
+            document.getElementById('favoriteRoutesBtn').addEventListener('click', showFavoriteRoutes);
+            document.getElementById('recommendedRoutesBtn').addEventListener('click', showRecommendedRoutes);
+            
+            // New workout plan button
+            document.getElementById('workoutPlanBtn').addEventListener('click', showWorkoutPlanModal);
+
+            // Generate workout plan button
+            document.getElementById('generateWorkoutPlanBtn').addEventListener('click', generateWorkoutPlan);
+
+            // Generate recommended routes by location input
+            document.getElementById('generateLocationRecommendedRoutesBtn').addEventListener('click', () => {
+                const locationInput = document.getElementById('recommendedLocationInput').value;
+                if (locationInput) {
+                    loadRecommendedRoutes(locationInput);
+                } else {
+                    alert("Пожалуйста, введите адрес или город для генерации маршрутов.");
+                }
+            });
+            
+            // Route navigation buttons (placeholders)
+            document.getElementById('routeBackBtn').addEventListener('click', routeBack);
+            document.getElementById('routeForwardBtn').addEventListener('click', routeForward);
+            
+            // Search functionality
+            document.getElementById('searchBtn').addEventListener('click', searchLocation);
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchLocation();
+            });
+            
+            // Stats panel collapse/expand
+            document.getElementById('collapseStatsBtn').addEventListener('click', toggleStats);
+            document.getElementById('statsHeader').addEventListener('click', toggleStats); // Also make header clickable
+            
+            // Navigation item handlers
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    // Remove active class from all nav items
+                    document.querySelectorAll('.nav-item').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    
+                    // Add active class to the clicked item
+                    this.classList.add('active');
+                    
+                    // Logic for section display
+                    const itemId = this.id;
+                    if (itemId === 'currentRouteBtn') {
+                        // Default view, no action needed, ensure modals are closed
+                        closeAllModals();
+                    } else if (itemId === 'latestRoutesBtn') {
+                        showLatestRoutes();
+                    } else if (itemId === 'achievementsBtn') {
+                        showAchievementsModal(); // Call new function
+                    } else if (itemId === 'progressBtn') {
+                        showProgressModal();
+                    } else if (itemId === 'favoriteRoutesBtn') {
+                        showFavoriteRoutes();
+                    } else if (itemId === 'recommendedRoutesBtn') {
+                        showRecommendedRoutes();
+                    } else if (itemId === 'workoutPlanBtn') { // New handler for workout plan
+                        showWorkoutPlanModal();
+                    } else if (itemId === 'ratingBtn') {
+                        showRatingModal();
+                    } else if (itemId === 'friendsBtn') {
+                        showFriendsModal();
+                    } else if (itemId === 'discussionsBtn') {
+                        showDiscussionsModal();
+                    }
                 });
+            });
+            
+            // Modal close handlers (using data-modal attribute for generic closing)
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.addEventListener('click', function() {
+                    const modalId = this.dataset.modal;
+                    document.getElementById(modalId).style.display = 'none';
+                });
+            });
+            
+            // Share button handlers
+            document.getElementById('shareWhatsApp').addEventListener('click', () => shareRoute('whatsapp'));
+            document.getElementById('shareTelegram').addEventListener('click', () => shareRoute('telegram'));
+            document.getElementById('shareVK').addEventListener('click', () => shareRoute('vk'));
+            document.getElementById('shareMessenger').addEventListener('click', () => shareRoute('messenger'));
+            
+            // Transport type selection handlers - MODIFIED TO ALLOW ONLY ONE SELECTION GLOBALLY
+            document.querySelectorAll('.transport-type .transport-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove active class from ALL transport options
+                    document.querySelectorAll('.transport-type .transport-option').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    
+                    // Add active class to the clicked option
+                    this.classList.add('active');
+                    
+                    // Update current transport type
+                    currentTransportType = this.dataset.type;
+                    
+                    console.log(`Selected transport type: ${this.textContent}`);
+                });
+            });
+
+            // Friends functionality
+            document.getElementById('addFriendBtn').addEventListener('click', addFriend);
+            document.getElementById('chatMessageInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+            document.getElementById('sendChatMessageBtn').addEventListener('click', sendChatMessage);
+
+            // Achievements claim button
+            document.getElementById('claimAchievementBtn').addEventListener('click', () => {
+                alert('Функционал "Заявить о достижении" в разработке. Достижения отслеживаются автоматически!');
+            });
+
+            // Initialize map after DOM is fully loaded
+            // This fixes "Cannot read properties of null (reading 'style')" error
+            // Check if google.maps is defined before calling initMap
+            if (window.google && window.google.maps) {
+                initMap();
+            } else {
+                // If Google Maps API script hasn't loaded yet, assign initMap to window
+                // so it can be called by the Google Maps API script's callback
+                window.initMap = initMap;
+            }
         });
 
-        // Обработка входа
+        // Set up user profile after Firebase auth
+        async function setupUserProfile() {
+            if (!currentUserId) return;
+
+            // Try to load user data from Firestore
+            const userDocRef = db.collection(`artifacts/${appId}/users`).doc(currentUserId);
+            const userDoc = await userDocRef.get();
+
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                currentUserName = userData.name || `Пользователь ${currentUserId.substring(0, 5)}`;
+                document.getElementById('userName').textContent = currentUserName;
+                document.getElementById('userLevel').textContent = userData.level || "Новичок";
+                document.getElementById('userAvatar').textContent = currentUserName.charAt(0);
+            } else {
+                // If user data doesn't exist, use anonymous ID and create a placeholder profile
+                currentUserName = `Пользователь ${currentUserId.substring(0, 5)}`;
+                document.getElementById('userName').textContent = currentUserName;
+                document.getElementById('userLevel').textContent = "Новичок";
+                document.getElementById('userAvatar').textContent = currentUserName.charAt(0);
+                // Optionally, save this basic profile to Firestore
+                await userDocRef.set({
+                    name: currentUserName,
+                    level: "Новичок",
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            }
+            // Load initial data after user is set up and authenticated
+            loadFavoriteRoutes();
+            loadProgress(); // Load progress on startup
+        }
+
+        // Function to close all modals
+        function closeAllModals() {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        // Show generic modal
+        function showModal(modalId) {
+            closeAllModals(); // Close any open modals first
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Handle user login (for demo purposes, real app would use Firebase Auth)
         function handleLogin(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
             
-            // Проверка учетных данных
-            const user = users.find(u => u.login === username && u.password === password);
+            // Check credentials against predefined users
+            const user = demoUsers.find(u => u.login === username && u.password === password);
             
             if (user) {
-                currentUser = user;
+                // For demo, we'll set currentUserName based on demoUsers
+                currentUserName = user.name;
                 document.getElementById('userName').textContent = user.name;
                 document.getElementById('userLevel').textContent = user.level;
                 document.getElementById('userAvatar').textContent = user.name.charAt(0);
                 
-                // Скрыть экран входа и показать приложение
+                // Hide login screen and show the main application
                 document.getElementById('loginContainer').classList.add('hidden');
                 document.getElementById('appContainer').classList.remove('hidden');
                 
-                // Попытка инициализации карты
-                if (!map && !mapError) {
-                    initMap();
-                }
+                // Firebase auth state change listener will handle setting currentUserId and loading data
+                // No direct calls to loadFavoriteRoutes() or loadProgress() here, as setupUserProfile()
+                // called by onAuthStateChanged will handle it.
             } else {
                 alert("Неверный логин или пароль!");
             }
         }
 
-        // Инициализация карты
+        // Initialize Google Map
         function initMap() {
             try {
                 const mapOptions = {
-                    center: { lat: 55.7558, lng: 37.6173 }, // Москва
+                    center: { lat: 55.7558, lng: 37.6173 }, // Default center (Moscow)
                     zoom: 13,
-                    mapTypeId: 'satellite',
+                    mapTypeId: 'satellite', // Satellite view by default
                     styles: [
-                        {
+                        { // Hide points of interest
                             "featureType": "poi",
                             "stylers": [{"visibility": "off"}]
                         },
-                        {
+                        { // Hide transit lines
                             "featureType": "transit",
                             "stylers": [{"visibility": "off"}]
                         }
@@ -944,9 +2077,13 @@
                 };
                 
                 map = new google.maps.Map(document.getElementById('map'), mapOptions);
-                document.getElementById('mapError').style.display = 'none';
+                // Ensure mapError element exists before trying to access its style
+                const mapErrorElement = document.getElementById('mapError');
+                if (mapErrorElement) {
+                    mapErrorElement.style.display = 'none'; // Hide error message if map loads
+                }
                 
-                // Добавление маркера текущего положения
+                // Add marker for current position
                 currentPositionMarker = new google.maps.Marker({
                     position: mapOptions.center,
                     map: map,
@@ -961,17 +2098,17 @@
                     title: "Ваше местоположение"
                 });
                 
-                // Добавление линии маршрута
+                // Add polyline for the route path
                 routePath = new google.maps.Polyline({
                     path: [],
                     geodesic: true,
-                    strokeColor: "#FF5722",
+                    strokeColor: "#FF5722", // Orange color for active route
                     strokeOpacity: 1.0,
                     strokeWeight: 4
                 });
                 routePath.setMap(map);
                 
-                // Запрос геолокации
+                // Request geolocation
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(position => {
                         const pos = {
@@ -983,48 +2120,143 @@
                         map.setCenter(pos);
                     }, () => {
                         handleLocationError(true);
-                    });
+                    }, { enableHighAccuracy: true }); // Request high accuracy GPS
                 } else {
                     handleLocationError(false);
                 }
                 
-                // Обработчики кнопок
-                document.querySelector('.control-button.start').addEventListener('click', startTracking);
-                document.querySelector('.control-button.stop').addEventListener('click', stopTracking);
             } catch (error) {
-                console.error("Ошибка инициализации карты:", error);
-                document.getElementById('mapError').style.display = 'flex';
+                console.error("Error initializing map:", error);
+                const mapErrorElement = document.getElementById('mapError');
+                if (mapErrorElement) {
+                    mapErrorElement.style.display = 'flex'; // Show map error message
+                }
                 mapError = true;
             }
         }
 
-        // Обработка ошибок геолокации
+        // Handle geolocation errors
         function handleLocationError(browserHasGeolocation) {
             if (!browserHasGeolocation) {
+                alert("Ваш браузер не поддерживает геолокацию. Некоторые функции будут недоступны.");
+            } else {
+                alert("Не удалось определить ваше местоположение. Убедитесь, что разрешение на геолокацию дано.");
+            }
+        }
+
+        // Center map on current location
+        function centerMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    if (currentPositionMarker) {
+                        currentPositionMarker.setPosition(pos);
+                    }
+                    
+                    if (map) {
+                        map.setCenter(pos);
+                    }
+                }, () => {
+                     alert("Не удалось получить текущее местоположение.");
+                }, { enableHighAccuracy: true });
+            } else {
                 alert("Ваш браузер не поддерживает геолокацию.");
             }
         }
 
-        // Начало отслеживания маршрута
+        // Toggle map type (roadmap, satellite, hybrid, terrain)
+        function toggleMapType() {
+            if (!map) {
+                alert("Карта не загружена.");
+                return;
+            }
+            
+            currentMapTypeIndex = (currentMapTypeIndex + 1) % mapTypes.length;
+            map.setMapTypeId(mapTypes[currentMapTypeIndex]);
+            
+            const mapTypeNames = ['Схема', 'Спутник', 'Гибрид', 'Рельеф'];
+            console.log(`Map type changed to: ${mapTypeNames[currentMapTypeIndex]}`);
+        }
+
+        // Search for a location on the map
+        function searchLocation() {
+            const query = document.getElementById('searchInput').value;
+            if (!query || !map) return;
+            
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode({ address: query }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    map.setCenter(results[0].geometry.location);
+                    if (currentPositionMarker) {
+                        currentPositionMarker.setPosition(results[0].geometry.location);
+                    }
+                } else {
+                    alert('Местоположение не найдено: ' + query);
+                }
+            });
+        }
+
+        // Placeholder for route back functionality
+        function routeBack() {
+            alert('Функция "Назад по маршруту" в разработке.');
+        }
+
+        // Placeholder for route forward functionality
+        function routeForward() {
+            alert('Функция "Вперед по маршруту" в разработке.');
+        }
+
+        // Toggle stats panel collapse/expand
+        function toggleStats() {
+            const statsPanel = document.getElementById('statsPanel');
+            statsCollapsed = !statsCollapsed;
+            
+            if (statsCollapsed) {
+                statsPanel.classList.add('collapsed');
+            } else {
+                statsPanel.classList.remove('collapsed');
+            }
+            // Toggle the chevron icon rotation
+            const collapseIcon = document.querySelector('#collapseStatsBtn .collapse-icon');
+            if (collapseIcon) { // Added null check for robustness
+                if (statsCollapsed) {
+                    collapseIcon.style.transform = 'rotate(180deg)';
+                } else {
+                    collapseIcon.style.transform = 'rotate(0deg)';
+                }
+            }
+        }
+
+        // Start tracking a route
         function startTracking() {
+            if (!currentUserId) {
+                alert("Пожалуйста, войдите, чтобы начать отслеживание.");
+                return;
+            }
             if (trackingActive) return;
             
             trackingActive = true;
             startTime = new Date();
             distance = 0;
             lastPosition = null;
+            currentRoute = null; // Reset current route for new tracking session
             
             if (routePath) {
-                routePath.setPath([]);
+                routePath.setPath([]); // Clear previous path
             }
             
-            // Обновление интерфейса
-            document.querySelector('.control-button.start .control-icon').classList.add('pulse');
+            // Update UI
+            document.getElementById('startTrackingBtn').querySelector('.control-icon').classList.add('pulse');
+            document.getElementById('stopTrackingBtn').querySelector('.control-icon').style.background = 'linear-gradient(135deg, var(--error) 0%, #e53935 100%)'; // Activate stop button style
             
-            // Обновление статистики
+            // Update stats immediately
             updateStats();
             
-            // Запуск отслеживания
+            // Start tracking interval
             trackingInterval = setInterval(() => {
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(position => {
@@ -1033,68 +2265,84 @@
                             lng: position.coords.longitude
                         };
                         
-                        // Обновление маркера положения
+                        // Update position marker
                         if (currentPositionMarker) {
                             currentPositionMarker.setPosition(pos);
                         }
                         
-                        // Добавление точки в маршрут
+                        // Add point to route path
                         if (routePath) {
                             const path = routePath.getPath();
                             path.push(pos);
                         }
                         
-                        // Расчет дистанции
+                        // Calculate distance
                         if (lastPosition) {
-                            const dist = google ? google.maps.geometry.spherical.computeDistanceBetween(
-                                new google.maps.LatLng(lastPosition.lat, lastPosition.lng),
-                                new google.maps.LatLng(pos.lat, pos.lng)
-                            ) : 0;
-                            
-                            distance += dist / 1000; // в километрах
+                            // Ensure Google Maps Geometry library is loaded
+                            if (google && google.maps && google.maps.geometry && google.maps.geometry.spherical) {
+                                const dist = google.maps.geometry.spherical.computeDistanceBetween(
+                                    new google.maps.LatLng(lastPosition.lat, lastPosition.lng),
+                                    new google.maps.LatLng(pos.lat, pos.lng)
+                                );
+                                distance += dist / 1000; // Add to total distance in kilometers
+                            } else {
+                                console.warn("Google Maps Geometry library not loaded. Distance calculation unavailable.");
+                            }
                         }
                         
                         lastPosition = pos;
                         
-                        // Обновление статистики
+                        // Update stats
                         updateStats();
                         
-                        // Центрирование карты на текущем положении
+                        // Pan map to current position
                         if (map) {
                             map.panTo(pos);
                         }
-                    });
+                    }, (error) => {
+                        console.error("Geolocation error during tracking:", error);
+                        // Display user-friendly notification
+                    }, { enableHighAccuracy: true });
+                } else {
+                    alert("Ваш браузер не поддерживает геолокацию. Отслеживание невозможно.");
+                    stopTracking(); // Stop tracking if geolocation is not supported
                 }
-            }, 2000); // Обновление каждые 2 секунды
+            }, 2000); // Update every 2 seconds
+            
+            alert('Трекинг начат!');
         }
 
-        // Остановка отслеживания маршрута
-        function stopTracking() {
+        // Stop tracking a route
+        async function stopTracking() {
             if (!trackingActive) return;
             
             trackingActive = false;
             clearInterval(trackingInterval);
             
-            // Обновление интерфейса
-            document.querySelector('.control-button.start .control-icon').classList.remove('pulse');
+            // Update UI
+            document.getElementById('startTrackingBtn').querySelector('.control-icon').classList.remove('pulse');
+            document.getElementById('stopTrackingBtn').querySelector('.control-icon').style.background = ''; // Reset stop button style
             
-            // Сохранение маршрута в Firebase
-            saveRouteToFirebase();
+            // Save the completed route
+            await saveRoute();
+            
+            alert('Трекинг остановлен!');
         }
 
-        // Обновление статистики
+        // Update statistics display
         function updateStats() {
             if (!startTime) return;
             
             const now = new Date();
-            const elapsedTime = Math.floor((now - startTime) / 1000); // в секундах
+            const elapsedTime = Math.floor((now - startTime) / 1000); // in seconds
+            
             const hours = Math.floor(elapsedTime / 3600);
             const minutes = Math.floor((elapsedTime % 3600) / 60);
             const seconds = elapsedTime % 60;
             
             const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            const avgSpeed = distance / (elapsedTime / 3600) || 0;
-            const pace = elapsedTime / (distance * 60) || 0; // минут на километр
+            const avgSpeed = (elapsedTime > 0) ? (distance / (elapsedTime / 3600)) : 0; // km/h
+            const pace = (distance > 0) ? (elapsedTime / (distance * 60)) : 0; // minutes per kilometer
             const paceMinutes = Math.floor(pace);
             const paceSeconds = Math.floor((pace - paceMinutes) * 60);
             
@@ -1104,36 +2352,1117 @@
             document.getElementById('pace').textContent = `${paceMinutes}:${paceSeconds.toString().padStart(2, '0')}/км`;
         }
 
-        // Сохранение маршрута в Firebase
-        function saveRouteToFirebase() {
-            if (!currentUser) return;
-            
-            let path = [];
-            if (routePath) {
-                path = routePath.getPath().getArray().map(point => {
-                    return { lat: point.lat(), lng: point.lng() };
-                });
+        // Save a route (locally for latest, and prepare for Firebase)
+        async function saveRoute() {
+            if (!currentUserId || !routePath || routePath.getPath().getLength() < 2) {
+                console.warn("Route is too short or user is not authorized to save.");
+                return;
             }
             
+            const pathArray = routePath.getPath().getArray().map(point => {
+                return { lat: point.lat(), lng: point.lng() };
+            });
+            
             const routeData = {
-                userId: currentUser.login,
-                userName: currentUser.name,
-                distance: distance,
+                id: 'local-route-' + Date.now(), // Generate a unique ID for local storage
+                userId: currentUserId,
+                userName: currentUserName,
+                distance: parseFloat(document.getElementById('distance').textContent.replace(' км', '')),
                 duration: Math.floor((new Date() - startTime) / 1000),
-                path: path,
-                transportType: "Велосипед (Сбалансированный)",
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                path: pathArray,
+                transportType: currentTransportType,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() // Use Firestore timestamp for server-side consistency
             };
             
-            db.collection("routes").add(routeData)
-                .then(docRef => {
-                    console.log("Маршрут сохранен с ID:", docRef.id);
-                    alert("Маршрут успешно сохранен!");
-                })
-                .catch(error => {
-                    console.error("Ошибка при сохранении маршрута:", error);
-                    alert("Ошибка при сохранении маршрута!");
+            currentRoute = routeData; // Set as current route for sharing/favoriting
+            
+            // Add to local list of latest routes
+            latestRoutes.unshift(routeData); // Add to the beginning
+            if (latestRoutes.length > 6) { // Limit to last 6 routes
+                latestRoutes.pop();
+            }
+            
+            // Save route to Firestore (latest_routes collection)
+            try {
+                await db.collection(`artifacts/${appId}/users/${currentUserId}/latest_routes`).add(routeData);
+                console.log("Route saved to Firestore 'latest_routes'.");
+                // Update user progress and leaderboard
+                await updateProgress(routeData.distance, routeData.duration);
+                await updateLeaderboard(routeData.distance, routeData.duration);
+            } catch (error) {
+                console.error("Error saving route to Firestore:", error);
+                alert("Не удалось сохранить маршрут. Проверьте подключение.");
+            }
+            
+            alert("Маршрут успешно завершен и сохранен!");
+        }
+
+        // Update user's progress in Firestore
+        async function updateProgress(newDistance, newDuration) {
+            if (!currentUserId) return;
+
+            const progressDocRef = db.collection(`artifacts/${appId}/users`).doc(currentUserId);
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(progressDocRef);
+                    let totalDistance = newDistance;
+                    let totalDuration = newDuration;
+                    let monthlyDistance = newDistance;
+                    let monthlyDuration = newDuration;
+                    let lastMonthReset = new Date().toISOString().substring(0, 7); // YYYY-MM
+
+                    if (doc.exists) {
+                        const data = doc.data();
+                        totalDistance += (data.totalDistance || 0);
+                        totalDuration += (data.totalDuration || 0);
+
+                        const storedLastMonthReset = data.lastMonthReset || '';
+                        const currentMonth = new Date().toISOString().substring(0, 7);
+
+                        if (storedLastMonthReset === currentMonth) {
+                            monthlyDistance += (data.monthlyDistance || 0);
+                            monthlyDuration += (data.monthlyDuration || 0);
+                        } else {
+                            // New month, reset monthly stats
+                            console.log("New month detected, resetting monthly progress.");
+                        }
+                    }
+
+                    transaction.set(progressDocRef, {
+                        totalDistance: totalDistance,
+                        totalDuration: totalDuration,
+                        monthlyDistance: monthlyDistance,
+                        monthlyDuration: monthlyDuration,
+                        lastMonthReset: lastMonthReset,
+                        lastActivity: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
                 });
+                console.log("User progress updated.");
+            } catch (error) {
+                console.error("Error updating user progress:", error);
+            }
+        }
+
+        // Load and display user's progress
+        async function loadProgress() {
+            if (!currentUserId) return;
+
+            const progressDocRef = db.collection(`artifacts/${appId}/users`).doc(currentUserId);
+            try {
+                const doc = await progressDocRef.get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const totalDist = data.totalDistance || 0;
+                    const totalDur = data.totalDuration || 0;
+                    const monthlyDist = data.monthlyDistance || 0;
+                    const monthlyDur = data.monthlyDuration || 0;
+
+                    document.getElementById('totalDistanceText').textContent = `${totalDist.toFixed(2)} км`;
+                    document.getElementById('totalDistanceProgress').style.width = `${Math.min(100, totalDist / 1000 * 100)}%`; // Example: 1000km max for total progress bar
+
+                    // For monthly, let's set a target, e.g., 100km/month
+                    const monthlyTarget = 100;
+                    document.getElementById('monthlyDistanceText').textContent = `${monthlyDist.toFixed(2)} км из ${monthlyTarget} км`;
+                    document.getElementById('monthlyDistanceProgress').style.width = `${Math.min(100, (monthlyDist / monthlyTarget) * 100)}%`;
+
+                } else {
+                    document.getElementById('totalDistanceText').textContent = `0.00 км`;
+                    document.getElementById('totalDistanceProgress').style.width = `0%`;
+                    document.getElementById('monthlyDistanceText').textContent = `0.00 км из 100 км`;
+                    document.getElementById('monthlyDistanceProgress').style.width = `0%`;
+                }
+            } catch (error) {
+                console.error("Error loading progress:", error);
+            }
+        }
+
+        // Show progress modal
+        function showProgressModal() {
+            showModal('progressModal');
+            loadProgress();
+        }
+
+        // Update leaderboard in Firestore
+        async function updateLeaderboard(newDistance, newDuration) {
+            if (!currentUserId) return;
+
+            const leaderboardDocRef = db.collection(`artifacts/${appId}/public/data/leaderboard`).doc(currentUserId);
+            try {
+                await db.runTransaction(async (transaction) => {
+                    const doc = await transaction.get(leaderboardDocRef);
+                    let totalDistance = newDistance;
+                    let totalDuration = newDuration;
+
+                    if (doc.exists) {
+                        const data = doc.data();
+                        totalDistance += (data.totalDistance || 0);
+                        totalDuration += (data.totalDuration || 0);
+                    }
+
+                    transaction.set(leaderboardDocRef, {
+                        userId: currentUserId,
+                        userName: currentUserName,
+                        totalDistance: totalDistance,
+                        totalDuration: totalDuration,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                });
+                console.log("Leaderboard updated.");
+            } catch (error) {
+                console.error("Error updating leaderboard:", error);
+            }
+        }
+
+        // Load and display leaderboard
+        async function loadLeaderboard() {
+            const loadingOverlay = document.getElementById('ratingLoading');
+            const leaderboardBody = document.getElementById('leaderboardBody');
+            leaderboardBody.innerHTML = '';
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                const querySnapshot = await db.collection(`artifacts/${appId}/public/data/leaderboard`)
+                                            .orderBy('totalDistance', 'desc')
+                                            .limit(10) // Show top 10
+                                            .get();
+                
+                if (querySnapshot.empty) {
+                    leaderboardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-light);">Рейтинг пока пуст.</td></tr>`;
+                } else {
+                    let rank = 1;
+                    querySnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const row = leaderboardBody.insertRow();
+                        row.insertCell().textContent = rank++;
+                        row.insertCell().textContent = data.userName || `Пользователь ${data.userId.substring(0,5)}`;
+                        row.insertCell().textContent = data.totalDistance ? data.totalDistance.toFixed(2) : '0.00';
+                        row.insertCell().textContent = data.totalDuration ? (data.totalDuration / 3600).toFixed(1) : '0.0'; // Convert seconds to hours
+                    });
+                }
+            } catch (error) {
+                console.error("Error loading leaderboard:", error);
+                leaderboardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--error);">Ошибка загрузки рейтинга.</td></tr>`;
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Show rating modal
+        function showRatingModal() {
+            showModal('ratingModal');
+            loadLeaderboard();
+        }
+
+        // Add a route to favorites (save to Firestore)
+        async function addRouteToFavorites(route) {
+            if (!currentUserId) {
+                alert("Пожалуйста, войдите, чтобы добавить маршрут в избранное.");
+                return;
+            }
+
+            // Check if this route is already favorited by this user
+            const existingFavorite = favoriteRoutes.find(r => r.originalId === route.id || r.id === route.id);
+            if (existingFavorite) {
+                alert("Этот маршрут уже в избранном!");
+                return;
+            }
+            
+            try {
+                const routeToSave = {
+                    userId: currentUserId,
+                    userName: currentUserName,
+                    originalId: route.id, // Keep original ID for AI/local routes
+                    name: route.name,
+                    distance: route.distance,
+                    duration: route.duration,
+                    path: JSON.stringify(route.path), // Stringify array of objects for Firestore
+                    transportType: route.transportType,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    isFavorite: true
+                };
+
+                const docRef = await db.collection(`artifacts/${appId}/users/${currentUserId}/favorite_routes`).add(routeToSave);
+                console.log("Route added to favorites with ID: ", docRef.id);
+                alert("Маршрут добавлен в избранное!");
+                
+                // Update local favorite routes list
+                favoriteRoutes.push({ ...route, id: docRef.id, originalId: route.id });
+                displayRoutes(favoriteRoutes, 'favoriteRoutesList', addRouteToFavorites, removeRouteFromFavorites); // Re-render the list
+            } catch (e) {
+                console.error("Error adding route to favorites:", e);
+                alert("Не удалось добавить маршрут в избранное.");
+            }
+        }
+        
+        // Remove a route from favorites (from Firestore)
+        async function removeRouteFromFavorites(routeId) {
+            if (!currentUserId) return;
+            try {
+                // Find the document in Firestore by its Firestore ID
+                const docRef = db.collection(`artifacts/${appId}/users/${currentUserId}/favorite_routes`).doc(routeId);
+                await docRef.delete();
+                console.log("Route removed from favorites with ID: ", routeId);
+                
+                favoriteRoutes = favoriteRoutes.filter(r => r.id !== routeId); // Remove from local list
+                alert("Маршрут удален из избранного!");
+                displayRoutes(favoriteRoutes, 'favoriteRoutesList', addRouteToFavorites, removeRouteFromFavorites); // Re-render the list
+            } catch (e) {
+                console.error("Error removing route from favorites:", e);
+                alert("Не удалось удалить маршрут из избранного.");
+            }
+        }
+
+        // Load user's favorite routes from Firestore
+        async function loadFavoriteRoutes() {
+            if (!currentUserId) {
+                favoriteRoutes = []; // Clear if no user is logged in
+                displayRoutes(favoriteRoutes, 'favoriteRoutesList', addRouteToFavorites, removeRouteFromFavorites);
+                return;
+            }
+
+            try {
+                const querySnapshot = await db.collection(`artifacts/${appId}/users/${currentUserId}/favorite_routes`)
+                                            .orderBy('timestamp', 'desc') // Sort by timestamp
+                                            .get();
+                
+                favoriteRoutes = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id, // Firestore document ID
+                        originalId: data.originalId || doc.id, // Original ID if it was an AI route
+                        name: data.name || `Маршрут ${new Date(data.timestamp.toDate()).toLocaleDateString()}`, // Add a default name if none exists
+                        distance: data.distance,
+                        duration: data.duration,
+                        transportType: data.transportType,
+                        path: JSON.parse(data.path || '[]'), // Parse path back from string
+                        timestamp: data.timestamp.toDate().toISOString()
+                    };
+                });
+                displayRoutes(favoriteRoutes, 'favoriteRoutesList', addRouteToFavorites, removeRouteFromFavorites);
+                console.log("Favorite routes loaded:", favoriteRoutes);
+            } catch (error) {
+                console.error("Error loading favorite routes:", error);
+                // Display error message
+            }
+        }
+
+        // Load recommended routes (from AI or Firebase)
+        async function loadRecommendedRoutes(locationQuery = null) {
+            if (!currentUserId) {
+                alert("Пожалуйста, войдите, чтобы получить рекомендованные маршруты.");
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('recommendedRoutesLoading');
+            const recommendedList = document.getElementById('recommendedRoutesList');
+            recommendedList.innerHTML = ''; // Clear previous routes
+            loadingOverlay.style.display = 'flex'; // Show loading indicator
+
+            let userLocation = { lat: null, lng: null };
+            let locationKnown = false;
+            let locationNameForPrompt = "";
+
+            if (locationQuery) {
+                locationNameForPrompt = locationQuery;
+                // Attempt to geocode the provided location query
+                try {
+                    const geocoder = new google.maps.Geocoder();
+                    const geoResults = await new Promise((resolve, reject) => {
+                        geocoder.geocode({ address: locationQuery }, (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                resolve(results[0].geometry.location);
+                            } else {
+                                reject(new Error(`Geocoding failed for ${locationQuery}: ${status}`));
+                            }
+                        });
+                    });
+                    userLocation = {
+                        lat: geoResults.lat(),
+                        lng: geoResults.lng()
+                    };
+                    locationKnown = true;
+                    console.log("Geocoded location:", userLocation);
+                } catch (geoError) {
+                    console.warn("Could not geocode provided location:", geoError.message);
+                    alert(`Не удалось найти местоположение для "${locationQuery}". Попробую сгенерировать общие маршруты.`);
+                    locationKnown = false; // Fallback to general routes
+                }
+            } else {
+                // If no location query, try to get current geolocation
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+                        } else {
+                            reject(new Error("Geolocation not supported by this browser."));
+                        }
+                    });
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    locationKnown = true;
+                    console.log("User location obtained:", userLocation);
+
+                    // Reverse geocode to get a city name for the prompt
+                    try {
+                        const geocoder = new google.maps.Geocoder();
+                        const reverseGeoResults = await new Promise((resolve, reject) => {
+                            geocoder.geocode({ location: userLocation }, (results, status) => {
+                                if (status === 'OK' && results[0]) {
+                                    const cityComponent = results[0].address_components.find(comp => comp.types.includes('locality'));
+                                    resolve(cityComponent ? cityComponent.long_name : results[0].formatted_address);
+                                } else {
+                                    reject(new Error(`Reverse geocoding failed: ${status}`));
+                                }
+                            });
+                        });
+                        locationNameForPrompt = reverseGeoResults;
+                        console.log("Reverse geocoded location name:", locationNameForPrompt);
+                    } catch (reverseGeoError) {
+                        console.warn("Could not reverse geocode user location:", reverseGeoError.message);
+                        locationNameForPrompt = "вашем текущем местоположении"; // Fallback text
+                    }
+
+                } catch (geoError) {
+                    console.warn("Could not get user geolocation for recommended routes:", geoError.message);
+                    locationKnown = false;
+                }
+            }
+
+            try {
+                // For a real app, you might filter these by location or user preferences
+                // For now, we'll always generate with AI based on the prompt
+                console.log("Generating recommended routes with AI...");
+                let prompt = "";
+
+                if (locationKnown) {
+                    prompt = `Сгенерируй 3-5 уникальных маршрутов для бега или велосипеда, ориентируясь на местоположение "${locationNameForPrompt}" (координаты: широта: ${userLocation.lat}, долгота: ${userLocation.lng}). Для каждого маршрута укажи: название, примерную дистанцию (в км), примерную длительность (в секундах), тип транспорта (running, balanced, mountain), и массив из 3-5 точек {lat, lng} для упрощенного отображения на карте. Точки должны быть в разумных пределах для реального маршрута и соответствовать указанным координатам. Ответь в формате JSON массива объектов.`;
+                } else {
+                    prompt = `Сгенерируй 3-5 уникальных маршрутов для бега или велосипеда в разных городах мира. Для каждого маршрута укажи: название, примерную дистанцию (в км), примерную длительность (в секундах), тип транспорта (running, balanced, mountain), и массив из 3-5 точек {lat, lng} для упрощенного отображения на карте. Точки должны быть в разумных пределах для реального маршрута. Ответь в формате JSON массива объектов.`;
+                }
+
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "name": { "type": "STRING" },
+                                    "distance": { "type": "NUMBER" },
+                                    "duration": { "type": "NUMBER" },
+                                    "transportType": { "type": "STRING" },
+                                    "path": {
+                                        "type": "ARRAY",
+                                        "items": {
+                                            "type": "OBJECT",
+                                            "properties": {
+                                                "lat": { "type": "NUMBER" },
+                                                "lng": { "type": "NUMBER" }
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": ["name", "distance", "duration", "transportType", "path"]
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = ""; // Canvas will automatically provide it at runtime
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    recommendedRoutes = JSON.parse(jsonText);
+                    // Add unique IDs to AI-generated routes
+                    recommendedRoutes = recommendedRoutes.map((route, index) => ({
+                        ...route,
+                        id: `ai-route-${Date.now()}-${index}`
+                    }));
+                    console.log("Recommended routes generated by AI:", recommendedRoutes);
+                } else {
+                    console.warn("AI did not return valid recommended routes. Using fallback demo data.");
+                    // Fallback to hardcoded demo data if AI fails
+                    recommendedRoutes = [
+                        {
+                            id: 'rec-route-1',
+                            name: "Маршрут Парк Горького",
+                            distance: 5.2,
+                            duration: 1935, // 32:15
+                            transportType: "running",
+                            path: [ {lat: 55.7289, lng: 37.6001}, {lat: 55.7295, lng: 37.6040}, {lat: 55.7300, lng: 37.6080} ]
+                        },
+                        {
+                            id: 'rec-route-2',
+                            name: "Маршрут Воробьевы горы",
+                            distance: 8.7,
+                            duration: 3940, // 1:05:40
+                            transportType: "balanced",
+                            path: [ {lat: 55.7090, lng: 37.5400}, {lat: 55.7100, lng: 37.5450}, {lat: 55.7110, lng: 37.5500} ]
+                        }
+                    ];
+                }
+                displayRoutes(recommendedRoutes, 'recommendedRoutesList', addRouteToFavorites);
+            } catch (error) {
+                console.error("Error loading/generating recommended routes:", error);
+                // Fallback to hardcoded demo data on any error
+                recommendedRoutes = [
+                    {
+                        id: 'rec-route-1',
+                        name: "Маршрут Парк Горького",
+                        distance: 5.2,
+                        duration: 1935, // 32:15
+                        transportType: "running",
+                        path: [ {lat: 55.7289, lng: 37.6001}, {lat: 55.7295, lng: 37.6040}, {lat: 55.7300, lng: 37.6080} ]
+                    },
+                    {
+                        id: 'rec-route-2',
+                        name: "Маршрут Воробьевы горы",
+                        distance: 8.7,
+                        duration: 3940, // 1:05:40
+                        transportType: "balanced",
+                        path: [ {lat: 55.7090, lng: 37.5400}, {lat: 55.7100, lng: 37.5450}, {lat: 55.7110, lng: 37.5500} ]
+                    }
+                ];
+                displayRoutes(recommendedRoutes, 'recommendedRoutesList', addRouteToFavorites);
+            } finally {
+                loadingOverlay.style.display = 'none'; // Hide loading indicator
+            }
+        }
+        
+        // Display list of routes in a modal
+        function displayRoutes(routes, elementId, addFavoriteCallback = null, removeFavoriteCallback = null) {
+            const listElement = document.getElementById(elementId);
+            listElement.innerHTML = ''; // Clear the list
+            
+            if (routes.length === 0) {
+                listElement.innerHTML = `<p style="text-align: center; color: var(--text-light);">Маршруты не найдены.</p>`;
+                return;
+            }
+
+            routes.forEach(route => {
+                const routeItem = document.createElement('div');
+                routeItem.classList.add('route-item');
+                routeItem.innerHTML = `
+                    <div class="route-name">${route.name}</div>
+                    <div class="route-info">
+                        <div>${route.distance ? route.distance.toFixed(2) : '0.0'} км</div>
+                        <div>${formatTime(route.duration)}</div>
+                        <div>${getTransportTypeName(route.transportType)}</div>
+                    </div>
+                    <div class="route-actions">
+                        <div class="route-action" onclick="repeatRoute('${route.id}', '${elementId}')">Повторить</div>
+                        <div class="route-action" onclick="showShareModalFromRoute('${route.id}', '${elementId}')">Поделиться</div>
+                        ${addFavoriteCallback ? `<div class="route-action add-favorite" onclick="handleFavoriteAction('${route.id}', '${elementId}')">${isRouteFavorite(route.id) ? 'Удалить из избранного' : 'Добавить в избранное'}</div>` : ''}
+                    </div>
+                `;
+                listElement.appendChild(routeItem);
+            });
+        }
+
+        // Helper to get transport type name
+        function getTransportTypeName(type) {
+            const transportNames = {
+                sprint: 'Спринт', walking: 'Ходьба', running: 'Бег', hiking: 'Хайкинг',
+                balanced: 'Сбалансированный (Велосипед)', shortest: 'Самый короткий (Велосипед)',
+                bikelanes: 'Велодорожки (Велосипед)', popular: 'Популярные (Велосипед)',
+                ebike: 'E-bike (Велосипед)', smooth: 'Плавная езда (Велосипед)',
+                road: 'Шоссейный (Велосипед)', mountain: 'Горный (Велосипед)'
+            };
+            return transportNames[type] || type;
+        }
+
+        // Check if a route is favorited
+        function isRouteFavorite(routeId) {
+            return favoriteRoutes.some(r => r.id === routeId || r.originalId === routeId);
+        }
+
+        // Handle add/remove from favorites from modal
+        function handleFavoriteAction(routeId, sourceListId) {
+            let route;
+            if (sourceListId === 'latestRoutesList') {
+                route = latestRoutes.find(r => r.id === routeId);
+            } else if (sourceListId === 'recommendedRoutesList') {
+                route = recommendedRoutes.find(r => r.id === routeId);
+            } else if (sourceListId === 'favoriteRoutesList') {
+                // If it's already in favorites list, we want to remove it
+                removeRouteFromFavorites(routeId);
+                return;
+            }
+
+            if (!route) return;
+
+            if (isRouteFavorite(route.id)) {
+                // Find the Firestore ID of the favorite route to remove
+                const favoriteToDelete = favoriteRoutes.find(r => r.originalId === route.id || r.id === route.id);
+                if (favoriteToDelete) {
+                    removeRouteFromFavorites(favoriteToDelete.id);
+                }
+            } else {
+                addRouteToFavorites(route);
+            }
+        }
+
+        // Show latest routes modal
+        function showLatestRoutes() {
+            displayRoutes(latestRoutes, 'latestRoutesList', addRouteToFavorites);
+            document.getElementById('latestRoutesModal').style.display = 'flex';
+        }
+
+        // Show favorite routes modal
+        function showFavoriteRoutes() {
+            loadFavoriteRoutes(); // Reload to ensure latest data
+            document.getElementById('favoriteRoutesModal').style.display = 'flex';
+        }
+
+        // Show recommended routes modal
+        function showRecommendedRoutes() {
+            document.getElementById('recommendedLocationInput').value = "Шымкент"; // Set default to Shymkent
+            loadRecommendedRoutes("Шымкент"); // Load based on Shymkent initially
+            document.getElementById('recommendedRoutesModal').style.display = 'flex';
+        }
+
+        // Repeat a route on the map
+        function repeatRoute(routeId, sourceListId) {
+            let route;
+            if (sourceListId === 'latestRoutesList') {
+                route = latestRoutes.find(r => r.id === routeId);
+            } else if (sourceListId === 'favoriteRoutesList') {
+                route = favoriteRoutes.find(r => r.id === routeId);
+            } else if (sourceListId === 'recommendedRoutesList') {
+                route = recommendedRoutes.find(r => r.id === routeId);
+            }
+            
+            if (route && route.path && map) {
+                // Clear previous route polyline if exists
+                if (currentPolyline) {
+                    currentPolyline.setMap(null);
+                }
+
+                // Draw the new route
+                currentPolyline = new google.maps.Polyline({
+                    path: route.path,
+                    geodesic: true,
+                    strokeColor: "#2196F3", // Blue color for repeated route
+                    strokeOpacity: 0.8,
+                    strokeWeight: 6
+                });
+                currentPolyline.setMap(map);
+
+                // Fit map bounds to the route
+                const bounds = new google.maps.LatLngBounds();
+                route.path.forEach(point => bounds.extend(point));
+                map.fitBounds(bounds);
+
+                // Close all modals
+                document.getElementById('latestRoutesModal').style.display = 'none';
+                document.getElementById('favoriteRoutesModal').style.display = 'none';
+                document.getElementById('recommendedRoutesModal').style.display = 'none';
+                document.getElementById('workoutPlanModal').style.display = 'none'; // Close workout plan modal too
+                document.getElementById('discussionsModal').style.display = 'none'; // Close discussions modal too
+                document.getElementById('friendsModal').style.display = 'none'; // Close friends modal too
+                document.getElementById('ratingModal').style.display = 'none'; // Close rating modal too
+                document.getElementById('progressModal').style.display = 'none'; // Close progress modal too
+
+
+                alert(`Начинаем повторение маршрута: ${route.name}. Следуйте по синей линии!`);
+            } else {
+                alert("Маршрут или его данные не найдены!");
+            }
+        }
+
+        // Show share modal (called from stats panel share button)
+        function showShareModal() {
+            if (!currentRoute) {
+                alert("Сначала завершите и сохраните маршрут!");
+                return;
+            }
+            document.getElementById('shareModal').style.display = 'flex';
+        }
+
+        // Show share modal (called from route list share button)
+        function showShareModalFromRoute(routeId, sourceListId) {
+            let routeToShare;
+            if (sourceListId === 'latestRoutesList') {
+                routeToShare = latestRoutes.find(r => r.id === routeId);
+            } else if (sourceListId === 'favoriteRoutesList') {
+                routeToShare = favoriteRoutes.find(r => r.id === routeId);
+            } else if (sourceListId === 'recommendedRoutesList') {
+                routeToShare = recommendedRoutes.find(r => r.id === routeId);
+            }
+
+            if (!routeToShare) {
+                alert("Маршрут для деления не найден!");
+                return;
+            }
+            currentRoute = routeToShare; // Set it as current for shareRoute function
+            document.getElementById('shareModal').style.display = 'flex';
+        }
+
+        // Share route functionality
+        function shareRoute(platform) {
+            if (!currentRoute) {
+                alert("Нет маршрута для деления!");
+                return;
+            }
+            
+            const formattedDistance = currentRoute.distance ? currentRoute.distance.toFixed(2) : '0.0';
+            const formattedTime = formatTime(currentRoute.duration);
+            
+            let message = `Присоединяйтесь ко мне в SprintTrack! Я только что завершил маршрут "${currentRoute.name || 'без названия'}" длиной ${formattedDistance} км за ${formattedTime}. #SprintTrack`;
+            
+            // In a real application, you would generate a link to the specific route here
+            const routeLink = `https://sprinttrack.app/routes/${currentRoute.id}`; // Example link
+
+            let shareUrl = '';
+
+            switch(platform) {
+                case 'whatsapp':
+                    shareUrl = `https://wa.me/?text=${encodeURIComponent(message + ' ' + routeLink)}`;
+                    break;
+                case 'telegram':
+                    shareUrl = `https://t.me/share/url?url=${encodeURIComponent(routeLink)}&text=${encodeURIComponent(message)}`;
+                    break;
+                case 'vk':
+                    shareUrl = `https://vk.com/share.php?url=${encodeURIComponent(routeLink)}&title=${encodeURIComponent(message)}`;
+                    break;
+                case 'messenger':
+                    // Messenger requires App ID, for simplicity, just display the message
+                    alert("Функция 'Поделиться через Messenger' требует дополнительной настройки с App ID Facebook. Сообщение: " + message);
+                    break;
+                default:
+                    alert("Ссылка для поделиться: " + message + '\n' + routeLink);
+                    break;
+            }
+
+            if (shareUrl) {
+                window.open(shareUrl, '_blank');
+            }
+            
+            document.getElementById('shareModal').style.display = 'none';
+        }
+
+        // Format time from seconds to HH:MM:SS
+        function formatTime(totalSeconds) {
+            if (typeof totalSeconds !== 'number' || isNaN(totalSeconds) || totalSeconds < 0) {
+                return '00:00:00';
+            }
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // Show Workout Plan Modal
+        function showWorkoutPlanModal() {
+            showModal('workoutPlanModal');
+            document.getElementById('workoutPlanOutput').innerHTML = ''; // Clear previous plan
+        }
+
+        // Generate Workout Plan using Gemini API
+        async function generateWorkoutPlan() {
+            const workoutGoal = document.getElementById('workoutGoal').value;
+            const fitnessLevel = document.getElementById('fitnessLevel').value;
+            const planDuration = document.getElementById('planDuration').value;
+
+            if (!workoutGoal || !planDuration || planDuration < 1) {
+                alert("Пожалуйста, заполните все поля для генерации плана.");
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('workoutPlanLoading');
+            const workoutPlanOutput = document.getElementById('workoutPlanOutput');
+            workoutPlanOutput.innerHTML = ''; // Clear previous output
+            loadingOverlay.style.display = 'flex'; // Show loading indicator
+
+            try {
+                const prompt = `Создай детализированный план тренировок для пользователя с целью "${workoutGoal}", уровнем "${fitnessLevel}" на ${planDuration} недель. План должен быть в формате JSON массива объектов, где каждый объект представляет собой день тренировки. Каждый объект дня должен содержать следующие поля:
+                - "день": номер дня в неделе (например, "Неделя 1, День 1")
+                - "тип_тренировки": (например, "Бег", "Силовая", "Отдых", "Велосипед")
+                - "описание": краткое описание тренировки (например, "Легкий бег", "Интервальная тренировка", "Отдых и восстановление")
+                - "дистанция_км": (число, если применимо, иначе 0)
+                - "длительность_мин": (число, если применимо, иначе 0)
+                - "отдых": (булево, true если это день отдыха)
+
+                Убедись, что план реалистичен, прогрессивен и включает в себя дни отдыха.`;
+                
+                const payload = {
+                    contents: [{ role: "user", parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "день": { "type": "STRING" },
+                                    "тип_тренировки": { "type": "STRING" },
+                                    "описание": { "type": "STRING" },
+                                    "дистанция_км": { "type": "NUMBER" },
+                                    "длительность_мин": { "type": "NUMBER" },
+                                    "отдых": { "type": "BOOLEAN" }
+                                },
+                                "required": ["день", "тип_тренировки", "описание", "дистанция_км", "длительность_мин", "отдых"]
+                            }
+                        }
+                    }
+                };
+
+                const apiKey = ""; // Canvas will automatically provide it at runtime
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonText = result.candidates[0].content.parts[0].text;
+                    const workoutPlan = JSON.parse(jsonText);
+                    
+                    displayWorkoutPlan(workoutPlan);
+                    console.log("Workout plan generated by AI:", workoutPlan);
+                } else {
+                    console.warn("AI did not return a valid workout plan.");
+                    workoutPlanOutput.innerHTML = `<p style="text-align: center; color: var(--error);">Не удалось сгенерировать план тренировок. Попробуйте еще раз.</p>`;
+                }
+            } catch (error) {
+                console.error("Error generating workout plan:", error);
+                workoutPlanOutput.innerHTML = `<p style="text-align: center; color: var(--error);">Произошла ошибка при генерации плана: ${error.message}.</p>`;
+            } finally {
+                loadingOverlay.style.display = 'none'; // Hide loading indicator
+            }
+        }
+
+        // Display the generated workout plan
+        function displayWorkoutPlan(plan) {
+            const workoutPlanOutput = document.getElementById('workoutPlanOutput');
+            workoutPlanOutput.innerHTML = '<h3>Ваш персонализированный план:</h3>';
+            
+            if (!plan || plan.length === 0) {
+                workoutPlanOutput.innerHTML += `<p style="text-align: center; color: var(--text-light);">План не сгенерирован.</p>`;
+                return;
+            }
+
+            plan.forEach(day => {
+                const dayItem = document.createElement('div');
+                dayItem.classList.add('workout-day');
+                dayItem.innerHTML = `
+                    <h4>${day.день} - ${day.тип_тренировки}</h4>
+                    <p>${day.описание}</p>
+                    ${day.дистанция_км > 0 ? `<p>Дистанция: ${day.дистанция_км} км</p>` : ''}
+                    ${day.длительность_мин > 0 ? `<p>Длительность: ${day.длительность_мин} мин</p>` : ''}
+                    ${day.отдых ? `<p>Это день отдыха!</p>` : ''}
+                `;
+                workoutPlanOutput.appendChild(dayItem);
+            });
+        }
+
+        // Load and display friends from Firestore
+        async function loadFriends() {
+            if (!currentUserId) return;
+
+            const loadingOverlay = document.getElementById('friendsLoading');
+            const friendsListElement = document.getElementById('friendsList');
+            friendsListElement.innerHTML = '';
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                const friendsSnapshot = await db.collection(`artifacts/${appId}/users/${currentUserId}/friends`).get();
+                const friendIds = friendsSnapshot.docs.map(doc => doc.id); // Friend's userId is the doc ID
+
+                if (friendIds.length === 0) {
+                    friendsListElement.innerHTML = `<p style="text-align: center; color: var(--text-light);">У вас пока нет друзей.</p>`;
+                    return;
+                }
+
+                // Fetch details for each friend from the main users collection
+                const friendDetailsPromises = friendIds.map(friendId => 
+                    db.collection(`artifacts/${appId}/users`).doc(friendId).get()
+                );
+                const friendDetailsSnapshots = await Promise.all(friendDetailsPromises);
+
+                const friendsData = [];
+                for (const doc of friendDetailsSnapshots) {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        friendsData.push({
+                            id: doc.id,
+                            name: data.name || `Пользователь ${doc.id.substring(0,5)}`,
+                            lastActivity: data.lastActivity ? new Date(data.lastActivity.toDate()).toLocaleDateString() : 'Нет активности',
+                            totalDistance: data.totalDistance || 0
+                        });
+                    }
+                }
+
+                if (friendsData.length === 0) {
+                    friendsListElement.innerHTML = `<p style="text-align: center; color: var(--text-light);">У вас пока нет друзей.</p>`;
+                } else {
+                    friendsData.forEach(friend => {
+                        const friendItem = document.createElement('div');
+                        friendItem.classList.add('friend-item');
+                        friendItem.innerHTML = `
+                            <div class="user-avatar" style="background-color: #${Math.floor(Math.random()*16777215).toString(16)};">${friend.name.charAt(0)}</div>
+                            <div class="friend-info">
+                                <div class="friend-name">${friend.name}</div>
+                                <div class="friend-status">Общая дистанция: ${friend.totalDistance.toFixed(2)} км</div>
+                                <div class="friend-status">Последняя активность: ${friend.lastActivity}</div>
+                            </div>
+                        `;
+                        friendsListElement.appendChild(friendItem);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Error loading friends:", error);
+                friendsListElement.innerHTML = `<p style="text-align: center; color: var(--error);">Ошибка загрузки списка друзей.</p>`;
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Add a friend
+        async function addFriend() {
+            if (!currentUserId) {
+                alert("Пожалуйста, войдите, чтобы добавить друзей.");
+                return;
+            }
+            const friendIdInput = document.getElementById('friendIdInput');
+            const friendId = friendIdInput.value.trim();
+
+            if (!friendId) {
+                alert("Введите ID друга.");
+                return;
+            }
+            if (friendId === currentUserId) {
+                alert("Вы не можете добавить себя в друзья.");
+                return;
+            }
+            
+            try {
+                // Check if the friend exists in the main users collection
+                const friendDoc = await db.collection(`artifacts/${appId}/users`).doc(friendId).get();
+                if (!friendDoc.exists) {
+                    alert("Пользователь с таким ID не найден.");
+                    return;
+                }
+
+                // Check if already friends
+                const existingFriendship = await db.collection(`artifacts/${appId}/users/${currentUserId}/friends`).doc(friendId).get();
+                if (existingFriendship.exists) {
+                    alert("Этот пользователь уже у вас в друзьях.");
+                    return;
+                }
+
+                // Add to current user's friends list
+                await db.collection(`artifacts/${appId}/users/${currentUserId}/friends`).doc(friendId).set({
+                    addedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                // Add current user to friend's friends list (for mutual friendship)
+                await db.collection(`artifacts/${appId}/users/${friendId}/friends`).doc(currentUserId).set({
+                    addedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert(`Пользователь ${friendId} добавлен в друзья!`);
+                friendIdInput.value = '';
+                loadFriends(); // Reload friends list
+            } catch (error) {
+                console.error("Error adding friend:", error);
+                alert("Не удалось добавить друга. Пожалуйста, попробуйте еще раз.");
+            }
+        }
+
+        // Show friends modal
+        function showFriendsModal() {
+            showModal('friendsModal');
+            loadFriends();
+        }
+
+        // Load and display chat messages
+        let chatUnsubscribe = null; // To store the unsubscribe function for chat listener
+
+        function showDiscussionsModal() {
+            showModal('discussionsModal');
+            const chatMessagesElement = document.getElementById('chatMessages');
+            chatMessagesElement.innerHTML = ''; // Clear existing messages
+
+            if (chatUnsubscribe) {
+                chatUnsubscribe(); // Unsubscribe from previous listener if exists
+            }
+
+            // Set up real-time listener for chat messages
+            chatUnsubscribe = db.collection(`artifacts/${appId}/public/data/discussions`)
+                .orderBy('timestamp')
+                .limitToLast(40) // Get last 40 messages
+                .onSnapshot(snapshot => {
+                    chatMessagesElement.innerHTML = ''; // Clear messages before re-rendering
+                    snapshot.forEach(doc => {
+                        const message = doc.data();
+                        const messageElement = document.createElement('div');
+                        messageElement.classList.add('chat-message');
+                        messageElement.classList.add(message.senderId === currentUserId ? 'own' : 'other');
+                        
+                        const senderName = message.senderName || `Пользователь ${message.senderId.substring(0,5)}`;
+                        const timestamp = message.timestamp ? new Date(message.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
+
+                        messageElement.innerHTML = `
+                            <div class="message-sender">${senderName}</div>
+                            <div class="message-text">${message.text}</div>
+                            <div class="message-time">${timestamp}</div>
+                        `;
+                        chatMessagesElement.appendChild(messageElement);
+                    });
+                    // Scroll to bottom
+                    chatMessagesElement.scrollTop = chatMessagesElement.scrollHeight;
+                }, error => {
+                    console.error("Error listening to chat messages:", error);
+                    chatMessagesElement.innerHTML = `<p style="text-align: center; color: var(--error);">Ошибка загрузки сообщений чата.</p>`;
+                });
+            
+            // Also, check and prune old messages after a delay to ensure initial load
+            setTimeout(pruneOldMessages, 5000); // Prune after 5 seconds
+        }
+
+        // Send a chat message
+        async function sendChatMessage() {
+            if (!currentUserId) {
+                alert("Пожалуйста, войдите, чтобы отправлять сообщения.");
+                return;
+            }
+            const chatMessageInput = document.getElementById('chatMessageInput');
+            const messageText = chatMessageInput.value.trim();
+
+            if (!messageText) return;
+
+            try {
+                await db.collection(`artifacts/${appId}/public/data/discussions`).add({
+                    senderId: currentUserId,
+                    senderName: currentUserName,
+                    text: messageText,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                chatMessageInput.value = ''; // Clear input
+                // pruneOldMessages(); // Prune messages after sending - this is now handled by the listener's limit
+            } catch (error) {
+                console.error("Error sending message:", error);
+                alert("Не удалось отправить сообщение.");
+            }
+        }
+
+        // Prune old messages (keep only the last 40)
+        async function pruneOldMessages() {
+            try {
+                const messagesRef = db.collection(`artifacts/${appId}/public/data/discussions`);
+                const querySnapshot = await messagesRef.orderBy('timestamp').get();
+                const messages = querySnapshot.docs;
+
+                if (messages.length > 40) {
+                    const messagesToDelete = messages.slice(0, messages.length - 40);
+                    const batch = db.batch();
+                    messagesToDelete.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    console.log(`Deleted ${messagesToDelete.length} old messages.`);
+                }
+            } catch (error) {
+                console.error("Error pruning old messages:", error);
+            }
+        }
+
+        // Achievements Logic
+        const achievements = [
+            { id: 'first_km', title: 'Первый километр', description: 'Пробегите или пройдите 1 километр.', threshold: { distance: 1, type: 'totalDistance' } },
+            { id: 'marathon_amateur', title: 'Марафонец-любитель', description: 'Преодолейте 42.2 км за одну тренировку.', threshold: { distance: 42.2, type: 'singleRouteDistance' } }, // Requires tracking single route distance
+            { id: 'king_of_mountains', title: 'Король гор', description: 'Наберите 1000 метров высоты на велосипеде.', threshold: { elevation: 1000, type: 'totalElevation' } }, // Requires elevation tracking
+            { id: 'daily_runner', title: 'Ежедневный бегун', description: 'Пробегайте минимум 1 км каждый день в течение недели.', threshold: { streak: 7, type: 'dailyStreak' } } // Requires daily activity tracking
+        ];
+
+        async function showAchievementsModal() {
+            showModal('achievementsModal');
+            if (!currentUserId) {
+                document.getElementById('achievementsList').innerHTML = `<p style="text-align: center; color: var(--text-light);">Войдите, чтобы отслеживать достижения.</p>`;
+                return;
+            }
+            checkAchievements();
+        }
+
+        async function checkAchievements() {
+            const achievementsListElement = document.getElementById('achievementsList');
+            achievementsListElement.innerHTML = ''; // Clear previous achievements
+
+            const userProgressDoc = await db.collection(`artifacts/${appId}/users`).doc(currentUserId).get();
+            const userProgress = userProgressDoc.exists ? userProgressDoc.data() : {};
+
+            achievements.forEach(achievement => {
+                let isCompleted = false;
+                let progressText = '';
+
+                switch (achievement.threshold.type) {
+                    case 'totalDistance':
+                        const totalDistance = userProgress.totalDistance || 0;
+                        isCompleted = totalDistance >= achievement.threshold.distance;
+                        progressText = `Прогресс: ${totalDistance.toFixed(2)} / ${achievement.threshold.distance} км`;
+                        break;
+                    case 'singleRouteDistance':
+                        // This requires checking individual route distances. For simplicity,
+                        // we'll assume a route is saved if its distance is > 0.
+                        // A more robust solution would iterate through latest_routes.
+                        // For now, we'll just check if any route has met this.
+                        // This is a placeholder and would need more complex logic.
+                        const latestRouteDistance = latestRoutes.length > 0 ? latestRoutes[0].distance : 0;
+                        isCompleted = latestRouteDistance >= achievement.threshold.distance;
+                        progressText = `Прогресс: ${latestRouteDistance.toFixed(2)} / ${achievement.threshold.distance} км (последний маршрут)`;
+                        break;
+                    case 'totalElevation':
+                        // Placeholder: Requires actual elevation data from routes
+                        const totalElevation = userProgress.totalElevation || 0; // Assuming you'd track this
+                        isCompleted = totalElevation >= achievement.threshold.elevation;
+                        progressText = `Прогресс: ${totalElevation.toFixed(0)} / ${achievement.threshold.elevation} м`;
+                        break;
+                    case 'daily_streak':
+                        // Placeholder: Requires complex daily activity tracking
+                        const dailyStreak = userProgress.dailyStreak || 0; // Assuming you'd track this
+                        isCompleted = dailyStreak >= achievement.threshold.streak;
+                        progressText = `Прогресс: ${dailyStreak} / ${achievement.threshold.streak} дней`;
+                        break;
+                }
+
+                const achievementItem = document.createElement('div');
+                achievementItem.classList.add('achievement-item');
+                if (isCompleted) {
+                    achievementItem.classList.add('completed');
+                }
+                achievementItem.innerHTML = `
+                    <i class="fas ${isCompleted ? 'fa-check-circle' : 'fa-trophy'}"></i>
+                    <div>
+                        <div class="achievement-title">${achievement.title}</div>
+                        <div class="achievement-description">${achievement.description}</div>
+                        <div class="achievement-description">${progressText}</div>
+                    </div>
+                `;
+                achievementsListElement.appendChild(achievementItem);
+            });
         }
     </script>
 </body>
