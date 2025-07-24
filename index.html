@@ -1770,10 +1770,48 @@
 
     <script>
         // Firebase configuration (will be replaced by Canvas runtime variables)
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        let firebaseConfig = {};
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
+        // Attempt to parse firebaseConfig from Canvas environment variable
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config !== '{}') {
+                firebaseConfig = JSON.parse(__firebase_config);
+                console.log("Firebase Config from Canvas:", firebaseConfig);
+            } else {
+                // Fallback to the user-provided hardcoded config if Canvas variable is not available or empty
+                console.warn("Canvas __firebase_config not found or empty. Using hardcoded Firebase config.");
+                firebaseConfig = {
+                    apiKey: "AIzaSyBaO6MfwDB0CCgvDto7VmHgJxN_e-ZsIgE",
+                    authDomain: "sprinttrack-941b5.firebaseapp.com",
+                    projectId: "sprinttrack-941b5",
+                    storageBucket: "sprinttrack-941b5.firebasestorage.app",
+                    messagingSenderId: "235437842194",
+                    appId: "1:235437842194:web:a8c47588fac613503a1dcb",
+                    measurementId: "G-SQ2TE2V5D3"
+                };
+            }
+        } catch (e) {
+            console.error("Error parsing __firebase_config from Canvas. Using hardcoded Firebase config.", e);
+            firebaseConfig = {
+                apiKey: "AIzaSyBaO6MfwDB0CCgvDto7VmHgJxN_e-ZsIgE",
+                authDomain: "sprinttrack-941b5.firebaseapp.com",
+                projectId: "sprinttrack-941b5",
+                storageBucket: "sprinttrack-941b5.firebasestorage.app",
+                messagingSenderId: "235437842194",
+                appId: "1:235437842194:web:a8c47588fac613503a1dcb",
+                measurementId: "G-SQ2TE2V5D3"
+            };
+        }
+
         // Initialize Firebase
+        // Ensure that firebaseConfig.projectId is available before initializing
+        if (!firebaseConfig.projectId) {
+            console.error("Firebase 'projectId' is missing in the configuration. Firebase will not initialize correctly.");
+            // Potentially show a user-facing error or disable Firebase-dependent features
+            // For now, we'll proceed with initialization which might still fail or cause issues.
+        }
+
         const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
@@ -2772,7 +2810,7 @@
                     }
                 };
 
-                const apiKey = ""; // Canvas will automatically provide it at runtime
+                const apiKey = "AIzaSyAq8xkhj3WFPT5fUMEM2ZUjpXryU048hmU"; // Canvas will automatically provide it at runtime
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                 const response = await fetch(apiUrl, {
@@ -2799,20 +2837,46 @@
                     // Fallback to hardcoded demo data if AI fails
                     recommendedRoutes = [
                         {
-                            id: 'rec-route-1',
-                            name: "Маршрут Парк Горького",
-                            distance: 5.2,
-                            duration: 1935, // 32:15
+                            id: 'shym-route-1',
+                            name: "Маршрут Парк Абая",
+                            distance: 4.5, // км
+                            duration: 1620, // 27:00 (для бега)
                             transportType: "running",
-                            path: [ {lat: 55.7289, lng: 37.6001}, {lat: 55.7295, lng: 37.6040}, {lat: 55.7300, lng: 37.6080} ]
+                            path: [
+                                {lat: 42.3160, lng: 69.5850}, // Примерные координаты рядом с Парком Абая
+                                {lat: 42.3180, lng: 69.5880},
+                                {lat: 42.3155, lng: 69.5910},
+                                {lat: 42.3130, lng: 69.5890},
+                                {lat: 42.3160, lng: 69.5850}
+                            ]
                         },
                         {
-                            id: 'rec-route-2',
-                            name: "Маршрут Воробьевы горы",
-                            distance: 8.7,
-                            duration: 3940, // 1:05:40
-                            transportType: "balanced",
-                            path: [ {lat: 55.7090, lng: 37.5400}, {lat: 55.7100, lng: 37.5450}, {lat: 55.7110, lng: 37.5500} ]
+                            id: 'shym-route-2',
+                            name: "Маршрут Шымкентский дендропарк",
+                            distance: 6.8, // км
+                            duration: 4080, // 1:08:00 (для прогулки или медленной пробежки)
+                            transportType: "walking",
+                            path: [
+                                {lat: 42.3680, lng: 69.6000}, // Примерные координаты Дендропарка
+                                {lat: 42.3700, lng: 69.6030},
+                                {lat: 42.3650, lng: 69.6050},
+                                {lat: 42.3630, lng: 69.6010},
+                                {lat: 42.3680, lng: 69.6000}
+                            ]
+                        },
+                        {
+                            id: 'shym-route-3',
+                            name: "Маршрут Парк Независимости",
+                            distance: 7.0, // км
+                            duration: 2520, // 42:00 (для езды на велосипеде)
+                            transportType: "cycling",
+                            path: [
+                                {lat: 42.3290, lng: 69.5890}, // Примерные координаты Парка Независимости
+                                {lat: 42.3320, lng: 69.5920},
+                                {lat: 42.3270, lng: 69.5950},
+                                {lat: 42.3240, lng: 69.5910},
+                                {lat: 42.3290, lng: 69.5890}
+                            ]
                         }
                     ];
                 }
@@ -2822,20 +2886,46 @@
                 // Fallback to hardcoded demo data on any error
                 recommendedRoutes = [
                     {
-                        id: 'rec-route-1',
-                        name: "Маршрут Парк Горького",
-                        distance: 5.2,
-                        duration: 1935, // 32:15
+                        id: 'shym-route-1',
+                        name: "Маршрут Парк Абая",
+                        distance: 4.5, // км
+                        duration: 1620, // 27:00 (для бега)
                         transportType: "running",
-                        path: [ {lat: 55.7289, lng: 37.6001}, {lat: 55.7295, lng: 37.6040}, {lat: 55.7300, lng: 37.6080} ]
+                        path: [
+                            {lat: 42.3160, lng: 69.5850}, // Примерные координаты рядом с Парком Абая
+                            {lat: 42.3180, lng: 69.5880},
+                            {lat: 42.3155, lng: 69.5910},
+                            {lat: 42.3130, lng: 69.5890},
+                            {lat: 42.3160, lng: 69.5850}
+                        ]
                     },
                     {
-                        id: 'rec-route-2',
-                        name: "Маршрут Воробьевы горы",
-                        distance: 8.7,
-                        duration: 3940, // 1:05:40
-                        transportType: "balanced",
-                        path: [ {lat: 55.7090, lng: 37.5400}, {lat: 55.7100, lng: 37.5450}, {lat: 55.7110, lng: 37.5500} ]
+                        id: 'shym-route-2',
+                        name: "Маршрут Шымкентский дендропарк",
+                        distance: 6.8, // км
+                        duration: 4080, // 1:08:00 (для прогулки или медленной пробежки)
+                        transportType: "walking",
+                        path: [
+                            {lat: 42.3680, lng: 69.6000}, // Примерные координаты Дендропарка
+                            {lat: 42.3700, lng: 69.6030},
+                            {lat: 42.3650, lng: 69.6050},
+                            {lat: 42.3630, lng: 69.6010},
+                            {lat: 42.3680, lng: 69.6000}
+                        ]
+                    },
+                    {
+                        id: 'shym-route-3',
+                        name: "Маршрут Парк Независимости",
+                        distance: 7.0, // км
+                        duration: 2520, // 42:00 (для езды на велосипеде)
+                        transportType: "cycling",
+                        path: [
+                            {lat: 42.3290, lng: 69.5890}, // Примерные координаты Парка Независимости
+                            {lat: 42.3320, lng: 69.5920},
+                            {lat: 42.3270, lng: 69.5950},
+                            {lat: 42.3240, lng: 69.5910},
+                            {lat: 42.3290, lng: 69.5890}
+                        ]
                     }
                 ];
                 displayRoutes(recommendedRoutes, 'recommendedRoutesList', addRouteToFavorites);
@@ -2873,7 +2963,6 @@
                 listElement.appendChild(routeItem);
             });
         }
-
         // Helper to get transport type name
         function getTransportTypeName(type) {
             const transportNames = {
